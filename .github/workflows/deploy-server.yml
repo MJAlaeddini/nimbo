@@ -1,0 +1,147 @@
+# Update the live instance on the server.
+#
+# Builds and checks the commit here first, then hands it to scripts/deploy.sh over ssh.
+# That script does the part that matters — copy the data off the volume, rebuild, verify,
+# and put the old commit back if the new one does not come up. Read it before changing
+# anything here.
+#
+# Needs, in the repository's Settings → Secrets and variables → Actions:
+#
+#   secrets   SSH_HOST         the server
+#             SSH_USER         the user to log in as
+#             SSH_KEY          that user's private key, whole file including the
+#                              BEGIN/END lines
+#             SSH_KNOWN_HOSTS  optional but wanted: the server's public host key, from
+#                              `ssh-keyscan <host>`. Without it the first connection
+#                              trusts whatever answers, which is the one moment someone
+#                              in the middle could hand over their own key instead.
+#             SSH_PORT         optional, defaults to 22
+#
+#   variables DEPLOY_PATH      optional, the checkout on the server, defaults to ~/nimbo
+#             COMPOSE_FILE     optional, defaults to docker-compose.yml (the http setup).
+#                              Set it to docker-compose.https.yml if Caddy is in front.
+
+name: Deploy to server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# The job reads the repository and nothing else. It has no reason to write here: what it
+# writes to is the server, and that is authorised by the ssh key, not by this token.
+permissions:
+  contents: read
+
+# One deploy at a time, and never cancelled halfway. Two of these running together would
+# have two builds fighting over one volume, and a cancellation could leave the server on a
+# half-built commit with no rollback.
+concurrency:
+  group: deploy-server
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Build and check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build the front end
+        run: npm run build
+
+      - name: Install the api
+        working-directory: server
+        run: npm ci
+
+      - name: The api starts and answers
+        working-directory: server
+        env:
+          PORT: 8080
+          DATA_FILE: ${{ runner.temp }}/ci-roadmap.json
+        run: |
+          set -euo pipefail
+          node src/index.js &
+          api=$!
+          trap 'kill $api 2>/dev/null || true' EXIT
+          for _ in $(seq 1 20); do
+            curl -fsS http://127.0.0.1:8080/api/health && break || sleep 1
+          done
+          curl -fsS http://127.0.0.1:8080/api/health | tee /dev/stderr | grep -q '"status":"ok"'
+
+      # The seed is generated from src/content and committed. If someone edits the weeks
+      # and forgets to regenerate it, the server would come up with the old text and no
+      # error anywhere — so catch it here instead of on the server.
+      - name: The seed matches src/content
+        run: |
+          set -euo pipefail
+          node server/scripts/build-seed.mjs
+          if ! git diff --quiet -- server/seed/roadmap.json; then
+            echo "::error file=server/seed/roadmap.json::Out of date. Run 'node server/scripts/build-seed.mjs' and commit the result."
+            git --no-pager diff --stat -- server/seed/roadmap.json
+            exit 1
+          fi
+
+  deploy:
+    name: Deploy
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up the ssh key
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+        run: |
+          set -euo pipefail
+          test -n "$SSH_KEY"  || { echo "::error::the SSH_KEY secret is empty"; exit 1; }
+          test -n "$SSH_HOST" || { echo "::error::the SSH_HOST secret is empty"; exit 1; }
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          if [ -n "$SSH_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            echo "::warning::SSH_KNOWN_HOSTS is not set, so this run trusts whichever host key answers. Set it with: ssh-keyscan -p $SSH_PORT <host>"
+            ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" > ~/.ssh/known_hosts 2>/dev/null
+          fi
+          chmod 600 ~/.ssh/known_hosts
+          test -s ~/.ssh/known_hosts || { echo "::error::no host key for $SSH_HOST:$SSH_PORT"; exit 1; }
+
+      - name: Run the deploy
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '~/nimbo' }}
+          COMPOSE_FILE: ${{ vars.COMPOSE_FILE || 'docker-compose.yml' }}
+        run: |
+          set -euo pipefail
+          # The script is piped from this checkout, so the code that runs the deploy is the
+          # code from the commit being deployed, and nothing stale is left on the server.
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" \
+              -o StrictHostKeyChecking=yes \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              -o ConnectTimeout=15 \
+              "$SSH_USER@$SSH_HOST" \
+              "APP_DIR=\"$DEPLOY_PATH\" COMPOSE_FILE='$COMPOSE_FILE' bash -s -- '$GITHUB_SHA'" \
+              < scripts/deploy.sh
+
+      - name: Remove the key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
