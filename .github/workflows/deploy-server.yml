@@ -17,7 +17,8 @@
 #                              in the middle could hand over their own key instead.
 #             SSH_PORT         optional, defaults to 22
 #
-#   variables DEPLOY_PATH      optional, the checkout on the server, defaults to ~/nimbo
+#   variables DEPLOY_PATH      optional, the checkout on the server, defaults to
+#                              ~/nimbo-final — set this if it ever moves
 #             COMPOSE_FILE     optional, defaults to docker-compose.yml (the http setup).
 #                              Set it to docker-compose.https.yml if Caddy is in front.
 
@@ -127,7 +128,7 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
-          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '~/nimbo' }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '~/nimbo-final' }}
           COMPOSE_FILE: ${{ vars.COMPOSE_FILE || 'docker-compose.yml' }}
         run: |
           set -euo pipefail

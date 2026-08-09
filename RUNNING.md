@@ -279,7 +279,7 @@ docker compose up -d --build
 | secret | `SSH_KEY` | کلید خصوصی همان کاربر، کل فایل با خط‌های BEGIN/END |
 | secret | `SSH_KNOWN_HOSTS` | اختیاری ولی توصیه‌شده — خروجی `ssh-keyscan <host>` |
 | secret | `SSH_PORT` | اختیاری، پیش‌فرض ۲۲ |
-| variable | `DEPLOY_PATH` | اختیاری، مسیر checkout روی سرور، پیش‌فرض `~/nimbo` |
+| variable | `DEPLOY_PATH` | اختیاری، مسیر checkout روی سرور، پیش‌فرض `~/nimbo-final` |
 | variable | `COMPOSE_FILE` | اختیاری، پیش‌فرض `docker-compose.yml` |
 
 بدون `SSH_KNOWN_HOSTS` اولین اتصال به هر کلیدی که جواب بدهد اعتماد می‌کند؛ ورک‌فلو در آن
