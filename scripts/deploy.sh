@@ -80,13 +80,19 @@ BACKUP="$BACKUP_DIR/roadmap-$STAMP.json"
 # works whether or not the site is currently running, and on a machine that has never run
 # it. An instance that has never been written to has no data file yet; that is the one
 # case where there is nothing to copy and nothing to lose.
+#
+# Every `run` and `exec` below reads from /dev/null. Both attach the caller's stdin to the
+# container, and this script has been fed to bash on stdin before — when that happens the
+# container eats the rest of the script, bash reaches EOF early and exits 0, and a deploy
+# that did almost nothing reports success. Cutting stdin off makes that impossible however
+# the script is invoked.
 say "copying the data off the volume"
-if "${COMPOSE[@]}" run --rm --no-deps -T --entrypoint sh api -c 'test -f /data/roadmap.json' >/dev/null 2>&1; then
+if "${COMPOSE[@]}" run --rm --no-deps -T --entrypoint sh api -c 'test -f /data/roadmap.json' >/dev/null 2>&1 </dev/null; then
   "${COMPOSE[@]}" run --rm --no-deps -T --entrypoint node api \
-    -e 'JSON.parse(require("fs").readFileSync("/data/roadmap.json","utf8"))' \
+    -e 'JSON.parse(require("fs").readFileSync("/data/roadmap.json","utf8"))' </dev/null \
     || die "/data/roadmap.json is not readable JSON — refusing to rebuild on top of data that is already damaged"
 
-  "${COMPOSE[@]}" run --rm --no-deps -T --entrypoint cat api /data/roadmap.json > "$BACKUP"
+  "${COMPOSE[@]}" run --rm --no-deps -T --entrypoint cat api /data/roadmap.json </dev/null > "$BACKUP"
   [ -s "$BACKUP" ] || die "the copy came out empty"
   printf '   %s (%s bytes)\n' "$BACKUP" "$(wc -c < "$BACKUP" | tr -d ' ')"
   HAD_DATA=yes
@@ -135,7 +141,7 @@ health() {
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("http " + r.status))))
       .then((h) => { console.log(JSON.stringify(h)); process.exit(0); })
       .catch((e) => { console.error(e.message); process.exit(1); });
-  ' 2>/dev/null
+  ' 2>/dev/null </dev/null
 }
 
 say "waiting for the api"
@@ -174,7 +180,7 @@ if [ "$HAD_DATA" = yes ]; then
     const weeks = (data.weeks || []).length;
     if (weeks === 0) { console.error("the data file has no weeks in it"); process.exit(1); }
     console.log("weeks: " + weeks + ", challenges: " + (data.challenges || []).length);
-  ' || {
+  ' </dev/null || {
     rollback
     die "the data did not read back cleanly after the deploy — the copy from before it is at $BACKUP"
   }
@@ -182,4 +188,10 @@ fi
 
 say "deployed $TARGET_SHA"
 [ "$HAD_DATA" = yes ] && printf 'data copy from before this deploy: %s\n' "$BACKUP"
+
+# The caller checks for this exact line. A script that dies partway through still exits 0 if
+# it dies by running out of script — which is what happened when this was fed to bash on
+# stdin and a container ate the rest of it. An exit code alone could not tell the difference
+# between "deployed" and "stopped reading"; this line only exists at the end.
+printf 'DEPLOY_OK %s\n' "$TARGET_SHA"
 exit 0

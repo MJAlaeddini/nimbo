@@ -132,16 +132,29 @@ jobs:
           COMPOSE_FILE: ${{ vars.COMPOSE_FILE || 'docker-compose.yml' }}
         run: |
           set -euo pipefail
-          # The script is piped from this checkout, so the code that runs the deploy is the
-          # code from the commit being deployed, and nothing stale is left on the server.
+          # The script travels from this checkout, so the code running the deploy is the code
+          # from the commit being deployed and nothing stale is left behind on the server.
+          #
+          # It is written to a temporary file there and run from it, rather than handed to
+          # `bash -s` on stdin. Under `bash -s` the script *is* stdin, and `docker compose
+          # run`/`exec` attach stdin to the container — so a container reads the rest of the
+          # script, bash hits EOF early and exits 0, and a deploy that stopped after the
+          # backup reports success. Reading the file, with stdin closed, removes the race.
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" \
               -o StrictHostKeyChecking=yes \
               -o IdentitiesOnly=yes \
               -o BatchMode=yes \
               -o ConnectTimeout=15 \
               "$SSH_USER@$SSH_HOST" \
-              "APP_DIR=\"$DEPLOY_PATH\" COMPOSE_FILE='$COMPOSE_FILE' bash -s -- '$GITHUB_SHA'" \
-              < scripts/deploy.sh
+              "tmp=\$(mktemp /tmp/nimbo-deploy.XXXXXX.sh) && cat > \"\$tmp\" && APP_DIR=\"$DEPLOY_PATH\" COMPOSE_FILE='$COMPOSE_FILE' bash \"\$tmp\" '$GITHUB_SHA' </dev/null; rc=\$?; rm -f \"\$tmp\"; exit \$rc" \
+              < scripts/deploy.sh | tee deploy.log
+
+          # Exit code is not enough on its own: a truncated script exits 0. The last line of
+          # a deploy that ran to the end says so, and nothing else prints it.
+          grep -qx "DEPLOY_OK $GITHUB_SHA" deploy.log || {
+            echo "::error::the deploy did not run to completion — no DEPLOY_OK for $GITHUB_SHA"
+            exit 1
+          }
 
       - name: Remove the key
         if: always()
