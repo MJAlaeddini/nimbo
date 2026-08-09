@@ -16,6 +16,11 @@ dist/
 build/
 .vite/
 
+# runtime state. The api writes the live roadmap and its backups here when it runs
+# outside docker; the tracked copy is server/seed/roadmap.json, and on a server this
+# is the /data volume. Committing it would freeze one machine's edits into the repo.
+server/data/
+
 # logs & os
 *.log
 npm-debug.log*
