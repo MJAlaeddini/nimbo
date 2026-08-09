@@ -25,6 +25,12 @@ TARGET_SHA="${1:?usage: deploy.sh <commit-sha>}"
 APP_DIR="${APP_DIR:-$HOME/nimbo}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 BACKUP_DIR="${BACKUP_DIR:-$HOME/nimbo-deploy-backups}"
+
+# These arrive as text through ssh, and a leading ~ inside quotes is not expanded by the
+# shell — `cd "~/nimbo"` looks for a directory actually named "~". Expand it here so a
+# DEPLOY_PATH of ~/nimbo means what whoever typed it meant.
+APP_DIR="${APP_DIR/#\~/$HOME}"
+BACKUP_DIR="${BACKUP_DIR/#\~/$HOME}"
 KEEP_BACKUPS="${KEEP_BACKUPS:-20}"
 HEALTH_RETRIES="${HEALTH_RETRIES:-30}"
 HEALTH_DELAY="${HEALTH_DELAY:-2}"
@@ -34,7 +40,11 @@ die() { printf '\nFAILED: %s\n' "$*" >&2; exit 1; }
 
 # --- where we are ------------------------------------------------------------
 
-cd "$APP_DIR" 2>/dev/null || die "no such directory: $APP_DIR (set the DEPLOY_PATH variable in the repository if the checkout lives elsewhere)"
+if ! cd "$APP_DIR" 2>/dev/null; then
+  printf 'checkouts that look like this one, under %s:\n' "$HOME" >&2
+  find "$HOME" -maxdepth 3 -name docker-compose.yml -not -path '*/node_modules/*' -printf '  %h\n' 2>/dev/null | head -n 10 >&2 || true
+  die "no such directory: $APP_DIR (set the DEPLOY_PATH repository variable to the checkout's path)"
+fi
 [ -d .git ] || die "$APP_DIR is not a git checkout"
 [ -f "$COMPOSE_FILE" ] || die "$APP_DIR/$COMPOSE_FILE is missing"
 [ -f .env ] || die "$APP_DIR/.env is missing — compose needs ADMIN_PASSWORD and SESSION_SECRET and will refuse to start without it"
