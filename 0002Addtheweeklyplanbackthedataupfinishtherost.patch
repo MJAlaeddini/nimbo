@@ -1,0 +1,854 @@
+From 9de7023c82fe0caf0af80efe4990f98afc291b00 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 8 Aug 2026 21:13:16 +0000
+Subject: [PATCH] Add the weekly plan, back the data up, finish the roster
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Three things.
+
+The roster is complete: Stratus is Khodapanah, Sabzi and Bakhtiari Moghaddam,
+which was the one column of the sheet I could not read.
+
+A third tab beside the two, for the shape of a week. Five days, each named for
+what actually happens in it rather than for its slot — Saturday is the previous
+mission delivered and the next one opened, Wednesday is Saturday rehearsed in
+front of your own team. Each day says what it is, what happens there, and what
+to bring; the current day marks itself, and Thursday and Friday get a line
+saying there is nothing scheduled and that is deliberate.
+
+Backups run two ways, because one machine holding the only copy is not a backup.
+The server takes a dated copy of the data file at boot and once a day, keeping
+thirty. That survives a container rebuild but not a lost disk, so the lead's
+panel also hands out the whole thing as spreadsheets: four CSVs and the raw
+JSON. Two details make those files actually open: a byte-order mark, without
+which Excel renders Persian as mojibake, and an apostrophe in front of any text
+starting with = or +, without which a spreadsheet reads a mentor's note as a
+formula. Exports are lead-only — a mentor asking for one gets a 403, which is
+the same rule as everywhere else in the panel.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01U57HFy24nnB6PJ1Zmysc6j
+---
+ RUNNING.md                    |  44 ++++++++++++++-
+ server/seed/roadmap.json      |   6 +-
+ server/src/backup.js          |  86 ++++++++++++++++++++++++++++
+ server/src/index.js           |  35 ++++++++++++
+ server/src/sheets.js          |  89 +++++++++++++++++++++++++++++
+ src/components/LeadDesk.jsx   |  85 +++++++++++++++++++++++++++-
+ src/components/WeekRhythm.jsx | 103 ++++++++++++++++++++++++++++++++++
+ src/content/bootcamp.js       |   2 +-
+ src/content/people.js         |   6 +-
+ src/content/rhythm.js         |  70 +++++++++++++++++++++++
+ src/lib/api.js                |  19 +++++++
+ src/lib/tabs.js               |   2 +-
+ src/pages/Phase0.jsx          |   3 +
+ src/styles/global.css         |  49 ++++++++++++++++
+ 14 files changed, 588 insertions(+), 11 deletions(-)
+ create mode 100644 server/src/backup.js
+ create mode 100644 server/src/sheets.js
+ create mode 100644 src/components/WeekRhythm.jsx
+ create mode 100644 src/content/rhythm.js
+
+diff --git a/RUNNING.md b/RUNNING.md
+index 5f11816..b4aca8d 100644
+--- a/RUNNING.md
++++ b/RUNNING.md
+@@ -20,7 +20,7 @@ docker compose up -d --build
+ 
+ بعد از چند دقیقه:
+ 
+-- سایت: `http://<server>:8088/` — یک آدرس، دو تب: **فاز صفر** و **نقشه‌ی بوت‌کمپ**
++- سایت: `http://<server>:8088/` — یک آدرس، سه تب: **فاز صفر**، **نقشه‌ی بوت‌کمپ** و **برنامه‌ی هفتگی**
+ - کنسول ادمین: `http://<server>:8088/#/admin`
+ - پنل کادر (منتورها و مسئول برنامه): `http://<server>:8088/#/panel`
+ 
+@@ -95,6 +95,9 @@ docker compose -f docker-compose.https.yml logs caddy | tail -30
+ server/                  API (Express) — نقشه، تیم‌ها، استخر چالش‌ها، احراز هویت
+   seed/roadmap.json        حالت اولیه: نُه هفته، چهار تیم، سیزده چالش در استخر
+   src/throttle.js          شمارنده‌ی تلاش‌های ناموفق ورود
++  src/backup.js            کپی روزانه‌ی فایل داده + ساختن CSV
++  src/sheets.js            همان داده‌ها به شکل جدول‌های صفحه‌گسترده
++src/content/rhythm.js    متن برنامه‌ی هفتگی — پنج روز و کاری که هر روز دارد
+ docker-compose.yml       حالت http: دو سرویس، api و web
+ docker-compose.https.yml حالت https: همان دوتا به‌علاوه‌ی Caddy — فایل کاملِ خودش
+ Caddyfile                گواهی خودکار و ریدایرکت http به https
+@@ -188,6 +191,45 @@ docker compose down -v                                          # پاک‌کر
+ عوض می‌شود و امتیازهایی که تا آن لحظه داده شده سر جایشان می‌مانند، چون شناسه‌ی محور دست
+ نمی‌خورد. یعنی می‌شود از همین هفته امتیاز داد و بعداً اسم‌ها را درست کرد.
+ 
++## پشتیبان‌گیری
++
++داده‌ها دو جا نگهداری می‌شوند و این عمدی است — یکی روی خود سرور و یکی بیرونش.
++
++**خودکار، روی سرور.** سرور هنگام بالا آمدن و بعد روزی یک بار از فایل داده یک کپی با تاریخ
++در اسمش می‌گیرد و کنار خودش در `backups/` می‌گذارد. سی نسخه‌ی آخر می‌ماند و قدیمی‌ترها
++پاک می‌شوند. چون داخل همان ولوم است، ری‌بیلد کانتینر را رد می‌کند ولی از دست‌رفتن دیسک را نه.
++با `BACKUP_KEEP_DAYS` تعداد نسخه‌ها و با `BACKUP_DIR` محلشان عوض می‌شود.
++
++```bash
++docker compose exec api ls /data/backups          # چه نسخه‌هایی هست
++docker compose exec api cat /data/roadmap.json > backup.json   # کپی دستی
++```
++
++**دستی، بیرون از سرور.** در پنل مسئول برنامه بخش «پشتیبان‌گیری» هست با پنج دکمه: چهار فایل
++CSV (نفرات و چارت قدرت، امتیازهای هفتگی، مشاهده‌های منتورها، راهنمایی‌ها) و یک فایل JSON از
++کل داده. CSVها با دوبار کلیک در اکسل باز می‌شوند و در گوگل‌شیت هم از `File › Import` مستقیم
++بالا می‌آیند؛ JSON برای برگرداندن است نه خواندن.
++
++دو ریزه‌کاری که در این فایل‌ها رعایت شده: علامت BOM ابتدای CSV گذاشته می‌شود، وگرنه اکسل
++فارسی را به‌هم‌ریخته باز می‌کند؛ و متنی که با `=` یا `+` شروع شود یک آپاستروف جلویش می‌گیرد،
++وگرنه صفحه‌گسترده یادداشت منتور را فرمول حساب می‌کند.
++
++اگر خواستی این‌ها خودکار جایی بروند، همان آدرس‌ها با توکن مسئول برنامه از `curl` هم جواب
++می‌دهند و می‌شود در یک cron گذاشتشان:
++
++```bash
++TOKEN=$(curl -s -X POST https://<دامنه>/api/auth/login \
++  -H 'content-type: application/json' \
++  -d '{"user":"lead","password":"<رمز>"}' | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
++
++curl -s https://<دامنه>/api/staff/export/people.csv \
++  -H "authorization: Bearer $TOKEN" -o people-$(date +%F).csv
++```
++
++سینک مستقیم به گوگل‌شیت را عمداً نگذاشتم: به حساب گوگل و OAuth نیاز دارد که از سرور داخل
++ایران دردسر است، و یک وابستگی همیشگی به سرویسی بیرونی اضافه می‌کند برای کاری که یک دکمه‌ی
++دانلود انجامش می‌دهد.
++
+ ## چیزی که مرورگر هرگز نمی‌بیند
+ 
+ این تنها دلیل داشتن بک‌اند است:
+diff --git a/server/seed/roadmap.json b/server/seed/roadmap.json
+index b9ed7b2..5f8b8a2 100644
+--- a/server/seed/roadmap.json
++++ b/server/seed/roadmap.json
+@@ -392,7 +392,7 @@
+       "members": [
+         {
+           "id": "m-stratus-1",
+-          "name": "مهدی خراسانی",
++          "name": "علیرضا خداپناه",
+           "seat": "سرگروه",
+           "photo": "",
+           "traits": {},
+@@ -404,7 +404,7 @@
+         },
+         {
+           "id": "m-stratus-2",
+-          "name": "ارشا سبحانی",
++          "name": "علی سبزی",
+           "seat": "",
+           "photo": "",
+           "traits": {},
+@@ -416,7 +416,7 @@
+         },
+         {
+           "id": "m-stratus-3",
+-          "name": "بختیاری",
++          "name": "علی بختیاری مقدم",
+           "seat": "",
+           "photo": "",
+           "traits": {},
+diff --git a/server/src/backup.js b/server/src/backup.js
+new file mode 100644
+index 0000000..278d545
+--- /dev/null
++++ b/server/src/backup.js
+@@ -0,0 +1,86 @@
++import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'node:fs';
++import { dirname, join, resolve } from 'node:path';
++
++// Two ways to not lose the data.
++//
++// The first is automatic: once a day the JSON file is copied next to itself with the date in
++// its name, and copies older than KEEP_DAYS are dropped. It lives on the same volume, so it
++// survives a container rebuild but not a lost disk — for that, the second way.
++//
++// The second is a download: the panel hands the lead a spreadsheet of everything, which they
++// can keep wherever they keep things. That one leaves the machine, which is the point.
++
++const DATA_FILE = resolve(process.env.DATA_FILE ?? './data/roadmap.json');
++const BACKUP_DIR = resolve(process.env.BACKUP_DIR ?? join(dirname(DATA_FILE), 'backups'));
++const KEEP = Number(process.env.BACKUP_KEEP_DAYS ?? 30);
++const DAY_MS = 24 * 3600 * 1000;
++
++function today() {
++  return new Date().toISOString().slice(0, 10);
++}
++
++export function snapshotNow() {
++  if (!existsSync(DATA_FILE)) return null;
++  mkdirSync(BACKUP_DIR, { recursive: true });
++  const target = join(BACKUP_DIR, `roadmap-${today()}.json`);
++  copyFileSync(DATA_FILE, target);
++  prune();
++  return target;
++}
++
++function prune() {
++  const files = readdirSync(BACKUP_DIR)
++    .filter((name) => name.startsWith('roadmap-') && name.endsWith('.json'))
++    .sort();
++  for (const name of files.slice(0, Math.max(0, files.length - KEEP))) {
++    unlinkSync(join(BACKUP_DIR, name));
++  }
++}
++
++export function listBackups() {
++  if (!existsSync(BACKUP_DIR)) return [];
++  return readdirSync(BACKUP_DIR)
++    .filter((name) => name.startsWith('roadmap-') && name.endsWith('.json'))
++    .sort()
++    .reverse()
++    .map((name) => ({ name, bytes: statSync(join(BACKUP_DIR, name)).size }));
++}
++
++// One copy at boot, then one a day. setInterval is enough: this process is meant to stay up,
++// and a restart just takes today's copy again, which is idempotent because the name is the date.
++export function startDailyBackups() {
++  try {
++    snapshotNow();
++  } catch (error) {
++    console.warn(`backup failed: ${error.message}`);
++  }
++  const timer = setInterval(() => {
++    try {
++      snapshotNow();
++    } catch (error) {
++      console.warn(`backup failed: ${error.message}`);
++    }
++  }, DAY_MS);
++  timer.unref?.();
++  return timer;
++}
++
++// --- the spreadsheet ---------------------------------------------------------
++
++// Excel decides a CSV's encoding by sniffing, and without this mark it reads UTF-8 Persian as
++// mojibake. Three bytes, and the file opens correctly by double-click on every platform.
++const BOM = '﻿';
++
++function cell(value) {
++  if (value === null || value === undefined) return '';
++  const text = String(value);
++  // A leading =, +, - or @ makes a spreadsheet treat the text as a formula. Prefixing an
++  // apostrophe keeps a mentor's note a note.
++  const safe = /^[=+\-@]/.test(text) ? `'${text}` : text;
++  return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
++}
++
++export function toCsv(headers, rows) {
++  const lines = [headers.map(cell).join(','), ...rows.map((row) => row.map(cell).join(','))];
++  return BOM + lines.join('\r\n') + '\r\n';
++}
+diff --git a/server/src/index.js b/server/src/index.js
+index 6f69313..076e132 100644
+--- a/server/src/index.js
++++ b/server/src/index.js
+@@ -2,6 +2,8 @@ import { resolve } from 'node:path';
+ import express from 'express';
+ import { credentialsConfigured, login, ownsTeam, requireAdmin, requireRole, staffConfigured } from './auth.js';
+ import { publicRoadmap } from './public.js';
++import { listBackups, snapshotNow, startDailyBackups } from './backup.js';
++import { SHEETS } from './sheets.js';
+ import { staffBoard } from './staff.js';
+ import * as store from './store.js';
+ import { checkLogin, loginFailed, loginKeys, loginSucceeded } from './throttle.js';
+@@ -28,6 +30,8 @@ if (ORIGIN) {
+ }
+ 
+ store.init();
++// One copy of the data file a day, kept on the same volume, thirty days deep.
++startDailyBackups();
+ 
+ const ok = (res, value) => (value ? res.json(value) : res.status(404).json({ error: 'not found' }));
+ 
+@@ -125,6 +129,37 @@ app.post('/api/staff/hints/:id/read', staffOnly, (req, res) => {
+   return ok(res, store.markHintRead(req.params.id));
+ });
+ 
++// Everything in the panel, as a spreadsheet the lead can keep somewhere that is not this
++// server. Opens by double-click in Excel and imports straight into Google Sheets.
++app.get('/api/staff/export/:kind.csv', leadOnly, (req, res) => {
++  const sheet = SHEETS[req.params.kind];
++  if (!sheet) return res.status(404).json({ error: 'unknown sheet' });
++  const csv = sheet.build({
++    teams: store.listTeams(),
++    accounts: store.listAccounts(),
++    axes: store.listAxes(),
++    assessments: store.listAssessments(),
++    observations: store.listObservations(),
++    hints: store.listHints(),
++  });
++  res.set('Content-Type', 'text/csv; charset=utf-8');
++  res.set('Content-Disposition', `attachment; filename="nimbo-${sheet.file}"`);
++  return res.send(csv);
++});
++
++// The raw file, for restoring rather than reading.
++app.get('/api/staff/export/backup.json', leadOnly, (req, res) => {
++  res.set('Content-Disposition', `attachment; filename="nimbo-backup-${new Date().toISOString().slice(0, 10)}.json"`);
++  return res.json(store.snapshot());
++});
++
++app.get('/api/staff/backups', leadOnly, (req, res) => res.json({ backups: listBackups() }));
++
++app.post('/api/staff/backups', leadOnly, (req, res) => {
++  const file = snapshotNow();
++  return file ? res.status(201).json({ file, backups: listBackups() }) : res.status(500).json({ error: 'no data file' });
++});
++
+ app.patch('/api/staff/teams/:id', leadOnly, (req, res) => ok(res, store.updateTeam(req.params.id, req.body ?? {})));
+ 
+ app.post('/api/staff/teams/:id/members', leadOnly, (req, res) => {
+diff --git a/server/src/sheets.js b/server/src/sheets.js
+new file mode 100644
+index 0000000..291136b
+--- /dev/null
++++ b/server/src/sheets.js
+@@ -0,0 +1,89 @@
++import { toCsv } from './backup.js';
++
++// Everything the panel holds, flattened into tables a spreadsheet can open. Ids travel with
++// every row so a sheet can be matched back to the data later, and so two people with the
++// same name never merge into one.
++
++const nameOf = (accounts, user) => accounts.find((a) => a.user === user || a.id === user)?.name ?? user ?? '';
++const VERDICT = { stay: 'می‌ماند', watch: 'زیر نظر', part: 'جدا می‌شود', none: '' };
++
++export function peopleSheet({ teams, accounts, axes }) {
++  const headers = [
++    'شناسه', 'نام', 'تیم', 'منتور', 'نقش در تیم',
++    ...axes.traits.map((a) => a.label),
++    'میانگین', 'تصمیم', 'یادداشت تصمیم',
++  ];
++  const rows = [];
++  for (const team of teams) {
++    const mentor = accounts.find((a) => a.id === team.mentor);
++    for (const member of team.members) {
++      const scores = axes.traits.map((a) => member.traits?.[a.id] ?? '');
++      const given = scores.filter((n) => typeof n === 'number' && n > 0);
++      rows.push([
++        member.id,
++        member.name,
++        team.name,
++        mentor?.name ?? '',
++        member.seat ?? '',
++        ...scores,
++        given.length > 0 ? (given.reduce((x, y) => x + y, 0) / given.length).toFixed(1) : '',
++        VERDICT[member.verdict?.call ?? 'none'] ?? '',
++        member.verdict?.note ?? '',
++      ]);
++    }
++  }
++  return toCsv(headers, rows);
++}
++
++export function assessmentsSheet({ teams, accounts, axes, assessments }) {
++  const headers = ['تیم', 'هفته', ...axes.metrics.map((a) => a.label), 'میانگین', 'یادداشت', 'ثبت‌کننده', 'آخرین تغییر'];
++  const rows = [...assessments]
++    .sort((a, b) => a.teamId.localeCompare(b.teamId) || a.weekId - b.weekId)
++    .map((row) => {
++      const scores = axes.metrics.map((a) => row.scores?.[a.id] ?? '');
++      const given = scores.filter((n) => typeof n === 'number' && n > 0);
++      return [
++        teams.find((t) => t.id === row.teamId)?.name ?? row.teamId,
++        row.weekId,
++        ...scores,
++        given.length > 0 ? (given.reduce((x, y) => x + y, 0) / given.length).toFixed(1) : '',
++        row.note ?? '',
++        nameOf(accounts, row.author),
++        (row.updatedAt ?? row.createdAt ?? '').slice(0, 10),
++      ];
++    });
++  return toCsv(headers, rows);
++}
++
++const KIND = { gap: 'خوب یاد گرفته نشد', strength: 'خیلی خوب یاد گرفته شد', edge: 'برگ برنده' };
++
++export function observationsSheet({ teams, accounts, observations }) {
++  const headers = ['تیم', 'نوع', 'متن', 'هفته', 'نویسنده', 'تاریخ'];
++  const rows = observations.map((o) => [
++    teams.find((t) => t.id === o.teamId)?.name ?? o.teamId,
++    KIND[o.kind] ?? o.kind,
++    o.text,
++    o.weekId ?? '',
++    nameOf(accounts, o.author),
++    (o.createdAt ?? '').slice(0, 10),
++  ]);
++  return toCsv(headers, rows);
++}
++
++export function hintsSheet({ teams, hints }) {
++  const headers = ['تیم', 'متن', 'تاریخ', 'خوانده شد'];
++  const rows = hints.map((h) => [
++    teams.find((t) => t.id === h.teamId)?.name ?? h.teamId,
++    h.text,
++    (h.createdAt ?? '').slice(0, 10),
++    h.readAt ? 'بله' : 'خیر',
++  ]);
++  return toCsv(headers, rows);
++}
++
++export const SHEETS = {
++  people: { file: 'people.csv', build: peopleSheet },
++  assessments: { file: 'assessments.csv', build: assessmentsSheet },
++  observations: { file: 'observations.csv', build: observationsSheet },
++  hints: { file: 'hints.csv', build: hintsSheet },
++};
+diff --git a/src/components/LeadDesk.jsx b/src/components/LeadDesk.jsx
+index eba383e..59827a6 100644
+--- a/src/components/LeadDesk.jsx
++++ b/src/components/LeadDesk.jsx
+@@ -1,6 +1,6 @@
+-import { useMemo, useState } from 'react';
++import { useEffect, useMemo, useState } from 'react';
+ import { OBSERVATION_KINDS, VERDICTS } from '../content/people';
+-import { api } from '../lib/api';
++import { api, download } from '../lib/api';
+ import { faDigits } from '../lib/time';
+ import Avatar from './Avatar';
+ import PowerChart from './PowerChart';
+@@ -149,6 +149,85 @@ function MemberRow({ member, axes, onSave, onRemove }) {
+   );
+ }
+ 
++const SHEETS = [
++  ['people', 'نفرات و چارت قدرت'],
++  ['assessments', 'امتیازهای هفتگی'],
++  ['observations', 'مشاهده‌های منتورها'],
++  ['hints', 'راهنمایی‌ها'],
++];
++
++// همه‌چیزِ پنل، به شکل چیزی که در اکسل یا گوگل‌شیت باز می‌شود. سرور خودش روزی یک نسخه
++// کنار فایل داده نگه می‌دارد، ولی آن نسخه روی همین ماشین است — این دکمه‌ها برای وقتی‌اند
++// که می‌خواهی داده جایی بیرون از این سرور هم باشد.
++function Backups() {
++  const [saved, setSaved] = useState([]);
++  const [busy, setBusy] = useState('');
++  const [error, setError] = useState('');
++
++  useEffect(() => {
++    api.backups().then((r) => setSaved(r.backups)).catch(() => {});
++  }, []);
++
++  const grab = async (kind, path, name) => {
++    setBusy(kind);
++    setError('');
++    try {
++      await download(path, name);
++    } catch {
++      setError('گرفتن فایل جواب نداد.');
++    } finally {
++      setBusy('');
++    }
++  };
++
++  return (
++    <section className="staff-card backups">
++      <header className="staff-card-head">
++        <h3>پشتیبان‌گیری</h3>
++        <span className="staff-note">
++          {saved.length > 0 ? `${faDigits(saved.length)} نسخه روی سرور — تازه‌ترین: ${saved[0].name.slice(8, 18)}` : 'هنوز نسخه‌ای روی سرور نیست'}
++        </span>
++      </header>
++      <p className="staff-note">
++        سرور خودش روزی یک نسخه از داده‌ها می‌گیرد و سی روز نگهشان می‌دارد، ولی آن نسخه‌ها روی
++        همین ماشین‌اند. فایل‌های زیر را بگیر و جایی بیرون از سرور نگه دار — با دوبار کلیک در
++        اکسل باز می‌شوند و در گوگل‌شیت هم مستقیم Import می‌شوند.
++      </p>
++      <div className="backup-grid">
++        {SHEETS.map(([kind, label]) => (
++          <button
++            key={kind}
++            type="button"
++            className="backup-btn"
++            disabled={busy === kind}
++            onClick={() => grab(kind, `/api/staff/export/${kind}.csv`, `nimbo-${kind}.csv`)}
++          >
++            <b>{label}</b>
++            <i>CSV</i>
++          </button>
++        ))}
++        <button
++          type="button"
++          className="backup-btn whole"
++          disabled={busy === 'backup'}
++          onClick={() => grab('backup', '/api/staff/export/backup.json', 'nimbo-backup.json')}
++        >
++          <b>کل داده‌ها</b>
++          <i>JSON — برای برگرداندن، نه خواندن</i>
++        </button>
++      </div>
++      <button
++        type="button"
++        className="staff-link"
++        onClick={() => api.makeBackup().then((r) => setSaved(r.backups)).catch(() => setError('ثبت نشد.'))}
++      >
++        همین حالا یک نسخه روی سرور بگیر
++      </button>
++      {error && <p className="adm-error">{error}</p>}
++    </section>
++  );
++}
++
+ function AxisEditor({ axes, onRename }) {
+   const [open, setOpen] = useState(false);
+   return (
+@@ -392,6 +471,8 @@ export default function LeadDesk({ board, run }) {
+         </section>
+       </div>
+ 
++      <Backups />
++
+       <AxisEditor axes={board.axes} onRename={(kind, id, label) => run(() => api.renameAxis(kind, id, label))} />
+     </div>
+   );
+diff --git a/src/components/WeekRhythm.jsx b/src/components/WeekRhythm.jsx
+new file mode 100644
+index 0000000..19ee2c0
+--- /dev/null
++++ b/src/components/WeekRhythm.jsx
+@@ -0,0 +1,103 @@
++import { useState } from 'react';
++import { RHYTHM, RHYTHM_TEXT } from '../content/rhythm';
++import { faDigits } from '../lib/time';
++import { BoltIcon, CheckIcon, FlagIcon, LockIcon, SparkIcon } from './icons';
++
++// یک نشان برای هر جور روز، تا از دور هم بشود تشخیصشان داد.
++const MARK = {
++  deliver: CheckIcon,
++  talk: SparkIcon,
++  status: FlagIcon,
++  challenge: BoltIcon,
++  internal: LockIcon,
++};
++
++function todayId() {
++  const weekday = new Date().getDay();
++  return RHYTHM.find((d) => d.weekday === weekday)?.id ?? null;
++}
++
++// روز بعدی که جلسه دارد — برای پنج‌شنبه و جمعه که چیزی در تقویم نیست.
++function nextId(today) {
++  if (today) return null;
++  const weekday = new Date().getDay();
++  const order = [...RHYTHM].sort((a, b) => ((a.weekday - weekday + 7) % 7) - ((b.weekday - weekday + 7) % 7));
++  return order[0]?.id ?? null;
++}
++
++export default function WeekRhythm() {
++  const t = RHYTHM_TEXT;
++  const today = todayId();
++  const upNext = nextId(today);
++  const [openId, setOpen] = useState(() => today ?? upNext ?? RHYTHM[0].id);
++
++  return (
++    <section className="block" id="rhythm">
++      <div className="wrap">
++        <div className="sec-head">
++          <span className="sec-kicker">{t.kicker}</span>
++          <h2 className="sec-title">{t.title}</h2>
++        </div>
++        <p className="sec-note" style={{ marginBottom: 26 }}>
++          {t.note}
++        </p>
++
++        <ol className="rhythm">
++          {RHYTHM.map((day, i) => {
++            const Mark = MARK[day.kind] ?? FlagIcon;
++            const isToday = day.id === today;
++            const isNext = day.id === upNext;
++            const open = day.id === openId;
++            return (
++              <li key={day.id} className={`rh-day kind-${day.kind} ${open ? 'open' : ''} ${isToday ? 'today' : ''}`}>
++                <button
++                  type="button"
++                  className="rh-head"
++                  aria-expanded={open}
++                  aria-controls={`rh-${day.id}`}
++                  onClick={() => setOpen(open ? null : day.id)}
++                >
++                  <span className="rh-rail" aria-hidden="true">
++                    <span className="rh-dot">
++                      <Mark size={13} />
++                    </span>
++                    {i < RHYTHM.length - 1 && <span className="rh-line" />}
++                  </span>
++
++                  <span className="rh-id">
++                    <span className="rh-day-name">
++                      {day.day}
++                      {isToday && <em className="rh-flag now">{t.todayLabel}</em>}
++                      {isNext && <em className="rh-flag next">{t.nextLabel}</em>}
++                    </span>
++                    <strong className="rh-title">{day.title}</strong>
++                    <span className="rh-lead">{day.lead}</span>
++                  </span>
++
++                  <span className="rh-num tnum" aria-hidden="true">
++                    {faDigits(i + 1)}
++                  </span>
++                </button>
++
++                {open && (
++                  <div className="rh-body" id={`rh-${day.id}`}>
++                    <p>{day.body}</p>
++                    <p className="rh-bring">
++                      <span>{t.bringLabel}</span>
++                      {day.bring}
++                    </p>
++                  </div>
++                )}
++              </li>
++            );
++          })}
++        </ol>
++
++        <div className="rh-rest">
++          <strong>{t.restTitle}</strong>
++          <p>{t.restNote}</p>
++        </div>
++      </div>
++    </section>
++  );
++}
+diff --git a/src/content/bootcamp.js b/src/content/bootcamp.js
+index 1dbe275..7d80368 100644
+--- a/src/content/bootcamp.js
++++ b/src/content/bootcamp.js
+@@ -108,7 +108,7 @@ export const ROADMAP_TEXT = {
+     titleAccent: 'راه',
+     tagline: 'نُه هفته روی یه پروژه‌ی واحد. هر هفته یه تکه‌ی تازه از معماری رو زنده می‌کنه و روی هفته‌ی قبل سوار می‌شه.',
+   },
+-  tabs: { phase0: 'فاز صفر', roadmap: 'نقشه‌ی بوت‌کمپ' },
++  tabs: { phase0: 'فاز صفر', roadmap: 'نقشه‌ی بوت‌کمپ', rhythm: 'برنامه‌ی هفتگی' },
+   kicker: 'ROADMAP',
+   title: 'نُه هفته‌ی بوت‌کمپ',
+   note: 'روی هر هفته بزن تا مأموریتش و شکل معماری تا آخر اون هفته رو ببینی.',
+diff --git a/src/content/people.js b/src/content/people.js
+index 8089d37..d293005 100644
+--- a/src/content/people.js
++++ b/src/content/people.js
+@@ -73,9 +73,9 @@ export const TEAMS = [
+     color: '#b69ad6',
+     mentor: 'asgarian',
+     members: [
+-      member('m-stratus-1', 'مهدی خراسانی', 'سرگروه'),
+-      member('m-stratus-2', 'ارشا سبحانی'),
+-      member('m-stratus-3', 'بختیاری'),
++      member('m-stratus-1', 'علیرضا خداپناه', 'سرگروه'),
++      member('m-stratus-2', 'علی سبزی'),
++      member('m-stratus-3', 'علی بختیاری مقدم'),
+     ],
+   },
+   {
+diff --git a/src/content/rhythm.js b/src/content/rhythm.js
+new file mode 100644
+index 0000000..030242c
+--- /dev/null
++++ b/src/content/rhythm.js
+@@ -0,0 +1,70 @@
++// ریتم هفته.
++//
++// پنج روز، پنج کارِ مشخص. هر روز سه چیز دارد: یک اسم که از رویش بفهمی چه خبر است،
++// یک جمله که بگوید آن‌جا واقعاً چه اتفاقی می‌افتد، و اینکه چه چیزی را باید با خودت
++// بیاوری. بقیه‌ی روز مال کار کردن است.
++
++export const RHYTHM_TEXT = {
++  kicker: 'هر هفته، همین پنج روز',
++  title: 'برنامه‌ی هفتگی',
++  note: 'هفته با تحویلِ مأموریت قبلی باز می‌شود و با ارائه‌ی داخلی مأموریت تازه بسته. بین این دو، سه بار جلوی جمع حرف می‌زنید — هر بار درباره‌ی چیز دیگری.',
++  bringLabel: 'با خودت بیاور',
++  todayLabel: 'امروز',
++  nextLabel: 'بعدی',
++  restTitle: 'پنج‌شنبه و جمعه',
++  restNote: 'جلسه‌ای نیست. اگر چیزی عقب مانده، این دو روز همان جاست که جبران می‌شود.',
++};
++
++export const RHYTHM = [
++  {
++    id: 'sat',
++    // getDay() در جاوااسکریپت: ۰ یکشنبه ... ۶ شنبه.
++    weekday: 6,
++    day: 'شنبه',
++    title: 'تحویل مأموریت و شروع مأموریت تازه',
++    kind: 'deliver',
++    lead: 'خط پایان هفته‌ی قبل و خط شروع هفته‌ی بعد، پشت سر هم.',
++    body: 'اول مأموریت هفته‌ی گذشته را تمام‌شده تحویل می‌دهید و از تصمیم‌هایتان دفاع می‌کنید. بعد مأموریت هفته‌ی تازه باز می‌شود و از همان لحظه ساعت شروع به شمردن می‌کند.',
++    bring: 'کدِ مرج‌شده، دموی کارکردن، و جوابِ «چرا این‌طوری؟»',
++  },
++  {
++    id: 'sun',
++    weekday: 0,
++    day: 'یک‌شنبه',
++    title: 'ارائه‌ی فنی',
++    kind: 'talk',
++    lead: 'یک موضوع فنی، عمیق‌تر از چیزی که برای انجام کار لازم بود.',
++    body: 'یک نفر چیزی را که یاد گرفته برای بقیه باز می‌کند — نه گزارشِ کاری که کرده، بلکه خودِ آن مفهوم. اینکه بتوانی چیزی را درس بدهی، تنها نشانه‌ی مطمئنِ فهمیدنش است.',
++    bring: 'یک موضوع، و شهامتِ اینکه وسطش بپرسند «این‌جا را دقیق‌تر بگو».',
++  },
++  {
++    id: 'mon',
++    weekday: 1,
++    day: 'دوشنبه',
++    title: 'گزارش وضعیت',
++    kind: 'status',
++    lead: 'کوتاه‌ترین جلسه‌ی هفته: کجا هستید و کجا گیر کرده‌اید.',
++    body: 'هر تیم می‌گوید تا کجا رسیده، چه چیزی جلویش را گرفته، و تا شنبه چه چیزی قرار است آماده باشد. جای حل‌کردن مشکل این‌جا نیست — جای رو کردنش هست.',
++    bring: 'عدد و وضعیت، نه توصیف. «تمام شد» یعنی چه؟',
++  },
++  {
++    id: 'tue',
++    weekday: 2,
++    day: 'سه‌شنبه',
++    title: 'اعلام چالش هفته',
++    kind: 'challenge',
++    lead: 'چیزی که برنامه‌ریزی‌اش را نکرده بودید.',
++    body: 'چالش این هفته باز می‌شود و از همان لحظه روی نقشه پیداست. مأموریت هفته سر جای خودش می‌ماند؛ چالش چیزی است که باید کنارش جا باز کنید.',
++    bring: 'هیچ. همین است که چالش است.',
++  },
++  {
++    id: 'wed',
++    weekday: 3,
++    day: 'چهارشنبه',
++    title: 'ارائه‌ی درون‌تیمی مأموریت',
++    kind: 'internal',
++    lead: 'تمرینِ شنبه، جلوی تیم خودتان و منتورتان.',
++    body: 'همان چیزی که شنبه قرار است تحویل بدهید را اول این‌جا نشان می‌دهید. سؤال‌های سختی که شنبه می‌پرسند، بهتر است دو روز زودتر پرسیده شوند.',
++    bring: 'نسخه‌ی ناتمام. اگر کامل بود، دیگر تمرین نبود.',
++  },
++];
+diff --git a/src/lib/api.js b/src/lib/api.js
+index 1af0c7e..66cd669 100644
+--- a/src/lib/api.js
++++ b/src/lib/api.js
+@@ -59,6 +59,23 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
+   return response.status === 204 ? null : response.json();
+ }
+ 
++// A download needs the same bearer token as everything else, so it cannot be a plain link:
++// fetch it with the header and hand the browser the bytes to save.
++export async function download(path, fallbackName) {
++  const response = await fetch(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${readToken()}` } });
++  if (!response.ok) throw new Error(`download failed: ${response.status}`);
++  const disposition = response.headers.get('Content-Disposition') ?? '';
++  const named = /filename="([^"]+)"/.exec(disposition);
++  const url = URL.createObjectURL(await response.blob());
++  const link = document.createElement('a');
++  link.href = url;
++  link.download = named?.[1] ?? fallbackName;
++  document.body.appendChild(link);
++  link.click();
++  link.remove();
++  URL.revokeObjectURL(url);
++}
++
+ export const api = {
+   roadmap: () => request('/api/roadmap'),
+   login: (user, password) => request('/api/auth/login', { method: 'POST', body: { user, password } }),
+@@ -77,6 +94,8 @@ export const api = {
+   removeMember: (id) => request(`/api/staff/members/${id}`, { method: 'DELETE', auth: true }),
+   renameAxis: (kind, id, label) =>
+     request(`/api/staff/axes/${kind}/${id}`, { method: 'PATCH', body: { label }, auth: true }),
++  backups: () => request('/api/staff/backups', { auth: true }),
++  makeBackup: () => request('/api/staff/backups', { method: 'POST', auth: true }),
+ 
+   state: () => request('/api/admin/state', { auth: true }),
+   patchPhase: (id, patch) => request(`/api/admin/phases/${id}`, { method: 'PATCH', body: patch, auth: true }),
+diff --git a/src/lib/tabs.js b/src/lib/tabs.js
+index 82f9028..d00655d 100644
+--- a/src/lib/tabs.js
++++ b/src/lib/tabs.js
+@@ -2,7 +2,7 @@
+ // can share it without threading props through the router, and it is not a route: switching
+ // tabs must never change the address.
+ const EVENT = 'nimbo-tab-change';
+-export const TABS = ['phase0', 'roadmap'];
++export const TABS = ['phase0', 'roadmap', 'rhythm'];
+ 
+ let current = 'phase0';
+ 
+diff --git a/src/pages/Phase0.jsx b/src/pages/Phase0.jsx
+index 5630ae9..512cf59 100644
+--- a/src/pages/Phase0.jsx
++++ b/src/pages/Phase0.jsx
+@@ -12,6 +12,7 @@ import Briefing from '../components/Briefing';
+ import Timeline from '../components/Timeline';
+ import PhaseBoard from '../components/PhaseBoard';
+ import Roadmap from '../components/Roadmap';
++import WeekRhythm from '../components/WeekRhythm';
+ 
+ // One address for the whole programme. Phase zero and the nine weeks are two tabs of the
+ // same page, not two places — switching is a click, never a navigation.
+@@ -78,6 +79,8 @@ export default function Phase0() {
+           </section>
+         </>
+       )}
++
++      {tab === 'rhythm' && <WeekRhythm />}
+     </>
+   );
+ }
+diff --git a/src/styles/global.css b/src/styles/global.css
+index 905cbca..2c17d06 100644
+--- a/src/styles/global.css
++++ b/src/styles/global.css
+@@ -1251,3 +1251,52 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
+   .league-row{gap:9px}
+   .league-people,.spark,.spark-empty{display:none}
+ }
++
++/* --- the shape of a week -------------------------------------------------- */
++.rhythm{list-style:none;display:grid;gap:0;counter-reset:none}
++.rh-day{position:relative;--rh-color:var(--lav)}
++.rh-day.kind-deliver{--rh-color:var(--gold)}
++.rh-day.kind-talk{--rh-color:#7fd1e8}
++.rh-day.kind-status{--rh-color:var(--lav)}
++.rh-day.kind-challenge{--rh-color:#e8617f}
++.rh-day.kind-internal{--rh-color:var(--ok)}
++.rh-head{display:flex;align-items:flex-start;gap:16px;width:100%;padding:16px 4px;border:0;background:none;font:inherit;text-align:start;cursor:pointer;color:inherit}
++.rh-head:focus-visible{outline:2px solid var(--gold-lit);outline-offset:-2px;border-radius:12px}
++.rh-rail{position:relative;display:flex;flex-direction:column;align-items:center;align-self:stretch;flex:none;width:34px}
++.rh-dot{display:grid;place-items:center;width:34px;height:34px;flex:none;border-radius:50%;border:1px solid var(--rh-color);color:var(--rh-color);background:rgba(13,5,24,.75);transition:.18s}
++.rh-line{flex:1;width:1px;min-height:14px;background:linear-gradient(var(--line-strong),var(--line))}
++.rh-day.open .rh-dot,.rh-head:hover .rh-dot{background:var(--rh-color);color:#150a22;box-shadow:0 0 0 5px color-mix(in srgb, var(--rh-color) 16%, transparent)}
++.rh-id{flex:1;min-width:0;display:grid;gap:4px;padding-block:2px}
++.rh-day-name{display:flex;align-items:center;gap:8px;color:var(--rh-color);font-size:.78rem;letter-spacing:.6px}
++.rh-flag{padding:1px 8px;border-radius:999px;font-size:.62rem;font-style:normal;letter-spacing:.4px}
++.rh-flag.now{background:var(--gold);color:#20130a;font-weight:700}
++.rh-flag.next{border:1px solid var(--line-strong);color:var(--lav-dim)}
++.rh-title{color:var(--ink);font-size:1.06rem;font-weight:700;line-height:1.5}
++.rh-lead{color:var(--lav);font-size:.88rem;line-height:1.75}
++.rh-num{flex:none;color:var(--line-strong);font-size:1.7rem;font-weight:800;line-height:1;transition:.18s}
++.rh-day.open .rh-num{color:color-mix(in srgb, var(--rh-color) 45%, transparent)}
++.rh-day.today>.rh-head .rh-title{color:var(--gold-lit)}
++.rh-body{margin-inline-start:50px;margin-bottom:16px;padding:15px 18px;border:1px solid var(--line);border-inline-start:3px solid var(--rh-color);border-radius:12px;background:rgba(13,5,24,.45);display:grid;gap:11px}
++.rh-body p{color:var(--ink);font-size:.93rem;line-height:1.95}
++.rh-bring{display:flex;gap:10px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--line);color:var(--lav) !important;font-size:.86rem !important}
++.rh-bring span{color:var(--rh-color);font-size:.74rem;letter-spacing:.5px;white-space:nowrap;padding-top:3px}
++.rh-rest{margin-top:22px;padding:16px 20px;border:1px dashed var(--line-strong);border-radius:14px}
++.rh-rest strong{color:var(--lav);font-size:.86rem}
++.rh-rest p{margin-top:5px;color:var(--lav-dim);font-size:.85rem;line-height:1.85}
++
++@media (max-width:560px){
++  .rh-head{gap:12px;padding:14px 0}
++  .rh-num{display:none}
++  .rh-body{margin-inline-start:26px}
++  .rh-title{font-size:1rem}
++}
++
++/* --- backups -------------------------------------------------------------- */
++.backup-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
++.backup-btn{display:grid;gap:4px;padding:13px 15px;border:1px solid var(--line-strong);border-radius:12px;background:rgba(13,5,24,.5);font:inherit;text-align:start;cursor:pointer;transition:.16s}
++.backup-btn:hover:not(:disabled){border-color:var(--gold);background:rgba(245,166,35,.08)}
++.backup-btn:disabled{opacity:.5;cursor:wait}
++.backup-btn b{color:var(--ink);font-size:.88rem;font-weight:400}
++.backup-btn i{color:var(--lav-dim);font-size:.7rem;font-style:normal;letter-spacing:.4px}
++.backup-btn.whole{grid-column:1/-1;border-style:dashed}
++.backup-btn:focus-visible{outline:2px solid var(--gold-lit);outline-offset:2px}
+-- 
+2.43.0
+

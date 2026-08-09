@@ -1,0 +1,42 @@
+docker compose -f docker-compose.https.yml downFrom 1ef86324ea7de38bb789272278fe27c78645a2d5 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 9 Aug 2026 05:51:11 +0000
+Subject: [PATCH] Ship HSTS off, the way the comment beside it already said to
+
+The Caddyfile carried a comment telling you to leave Strict-Transport-Security
+commented out until the certificate is confirmed, directly above an active
+Strict-Transport-Security line. The comment had it right.
+
+A browser that has seen that header once refuses plain http for that hostname
+for a year, whatever the server says afterwards, so shipping it on by default
+turns "let me try https" into a one-way door.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01U57HFy24nnB6PJ1Zmysc6j
+---
+ Caddyfile | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/Caddyfile b/Caddyfile
+index 396e3f3..780626e 100644
+--- a/Caddyfile
++++ b/Caddyfile
+@@ -12,10 +12,11 @@
+ 	encode zstd gzip
+ 
+ 	header {
+-		# Tells the browser to use https only, for a year. Leave this commented out until
+-		# you have confirmed the certificate works: browsers that have seen it once will
+-		# refuse plain http for that long, which is hard to undo.
+-		Strict-Transport-Security "max-age=31536000"
++		# Off on purpose. This tells a browser to use https only, for a year, and a browser
++		# that has seen it once will refuse plain http for that name until the year is up —
++		# no matter what the server later says. Turn it on once you are sure you are staying
++		# on https and the certificate is good, not before.
++		# Strict-Transport-Security "max-age=31536000"
+ 		X-Content-Type-Options "nosniff"
+ 		X-Frame-Options "DENY"
+ 		Referrer-Policy "strict-origin-when-cross-origin"
+-- 
+2.43.0
+

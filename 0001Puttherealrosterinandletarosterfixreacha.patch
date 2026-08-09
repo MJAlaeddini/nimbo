@@ -1,0 +1,556 @@
+From 620c2fed31cabcecb4df820c90b9bd9842984fc3 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 7 Aug 2026 23:10:56 +0000
+Subject: [PATCH] Put the real roster in, and let a roster fix reach a running
+ instance
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Thirteen real names off the handwritten sheet, each on their mentor's team, with
+the starred name in each column recorded as that team's lead. The placeholder
+flag is gone: a person is marked "no photo" when their photo field is empty,
+which is one fewer thing that can fall out of step with itself.
+
+Saved data beats seed data, which is right for everything except this — an
+instance that had already run would have kept the fake names forever. So teams
+now merge by id: a person nobody has touched takes their name from the seed, and
+the moment a mentor scores them or the lead renames them the file's version is
+theirs and the seed stops overriding. People added from the panel stay, and
+people dropped from the seed stay too, because removing a real person is a
+decision for the panel and not for a deploy.
+
+The config files lost their Persian comments. Right-to-left text inside a .env
+or a Caddyfile comes out scrambled in a terminal editor, and these three were
+the only config files in the repo not written in English.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01U57HFy24nnB6PJ1Zmysc6j
+---
+ .env.example                  | 52 ++++++++++++++++++----------
+ Caddyfile                     | 13 +++----
+ docker-compose.https.yml      | 24 ++++++-------
+ server/seed/roadmap.json      | 65 ++++++++++++++---------------------
+ server/src/store.js           | 51 ++++++++++++++++++++++-----
+ src/components/LeadDesk.jsx   |  2 +-
+ src/components/MentorDesk.jsx |  4 +--
+ src/content/people.js         | 31 +++++++++--------
+ 8 files changed, 141 insertions(+), 101 deletions(-)
+
+diff --git a/.env.example b/.env.example
+index 5349dc9..2fe978a 100644
+--- a/.env.example
++++ b/.env.example
+@@ -1,25 +1,41 @@
+-# Copy to .env before `docker compose up -d --build`.
++# Copy to .env before bringing the stack up.
++#
++#   http  (LAN / testing):  docker compose up -d --build
++#   https (public server):  docker compose -f docker-compose.https.yml up -d --build
++
++# --- admin console (#/admin) -------------------------------------------------
+ ADMIN_USER=nimbo
+ ADMIN_PASSWORD=change-me
+-# openssl rand -hex 32
+-SESSION_SECRET=change-me-too
+-WEB_PORT=8088
+ 
+-# فقط برای حالت HTTPS (docker-compose.https.yml). نامی که سایت روی آن جواب می‌دهد و
+-# Caddy برایش گواهی می‌گیرد — باید از قبل به IP همین سرور اشاره کند.
+-SITE_DOMAIN=nimbo.example.com
+-# آدرس ایمیل برای حساب Let's Encrypt: هشدار انقضای گواهی به این‌جا می‌آید.
+-SITE_EMAIL=
++# Signs the session tokens. Generate with: openssl rand -hex 32
++# Changing it invalidates every open session; nobody has to type it, so make it long.
++SESSION_SECRET=change-me-too
+ 
+-# Staff logins. The roster (who exists, which team) lives in the code; the passwords live
+-# only here. These two are the shared fallbacks:
++# --- staff logins (#/panel) --------------------------------------------------
++# The roster — who exists, which team they mentor — lives in the code.
++# The passwords live only here. These two are the shared fallbacks.
+ MENTOR_PASSWORD=change-me-mentor
+ LEAD_PASSWORD=change-me-lead
+ 
+-# ...and any mentor can be given their own instead, which wins over MENTOR_PASSWORD.
+-# Usernames are saleh, asgarian, tarkashvand, amir (mentors) and lead.
+-# STAFF_PASSWORD_SALEH=
+-# STAFF_PASSWORD_ASGARIAN=
+-# STAFF_PASSWORD_TARKASHVAND=
+-# STAFF_PASSWORD_AMIR=
+-# STAFF_PASSWORD_LEAD=
++# Any account can be given its own password instead, which beats the shared one.
++# Usernames: saleh, asgarian, tarkashvand, amir (mentors) and lead.
++# Leaving one blank is fine — it falls back to MENTOR_PASSWORD / LEAD_PASSWORD.
++STAFF_PASSWORD_SALEH=
++STAFF_PASSWORD_ASGARIAN=
++STAFF_PASSWORD_TARKASHVAND=
++STAFF_PASSWORD_AMIR=
++STAFF_PASSWORD_LEAD=
++
++# --- http mode only ----------------------------------------------------------
++# Port the site answers on. Ignored in https mode, where 80 and 443 are used.
++WEB_PORT=8088
++
++# --- https mode only ---------------------------------------------------------
++# The hostname the site answers on and Caddy takes a certificate for. It must
++# already point at this server's IP, and ports 80 and 443 must be reachable:
++# 443 serves the site, 80 is how Let's Encrypt verifies you own the name.
++# No domain? A free subdomain from duckdns.org works.
++SITE_DOMAIN=nimbo.example.com
++
++# Let's Encrypt account address. Certificate expiry warnings go here.
++SITE_EMAIL=
+diff --git a/Caddyfile b/Caddyfile
+index f8f07bd..396e3f3 100644
+--- a/Caddyfile
++++ b/Caddyfile
+@@ -1,8 +1,8 @@
+-# Caddy در جلوی nginx می‌نشیند و تنها کارش HTTPS است: خودش از Let's Encrypt گواهی
+-# می‌گیرد، خودش تمدیدش می‌کند، و http را به https می‌فرستد. هیچ کلید و گواهی‌ای دستی
+-# ساخته نمی‌شود.
++# Caddy sits in front of nginx and does one job: HTTPS. It takes a certificate from
++# Let's Encrypt, renews it on its own, and sends http traffic to https. No certificate
++# or key is ever created by hand.
+ #
+-# SITE_DOMAIN در .env تعیین می‌کند این سایت روی چه نامی جواب بدهد.
++# SITE_DOMAIN in .env decides which name this site answers on.
+ 
+ {
+ 	email {$SITE_EMAIL:admin@example.com}
+@@ -12,8 +12,9 @@
+ 	encode zstd gzip
+ 
+ 	header {
+-		# یک سال به مرورگر می‌گوید فقط از https بیا. تا وقتی مطمئن نشدی گواهی درست
+-		# گرفته شده این خط را روشن نکن — برگشتن از آن برای مرورگرهایی که دیده‌اندش سخت است.
++		# Tells the browser to use https only, for a year. Leave this commented out until
++		# you have confirmed the certificate works: browsers that have seen it once will
++		# refuse plain http for that long, which is hard to undo.
+ 		Strict-Transport-Security "max-age=31536000"
+ 		X-Content-Type-Options "nosniff"
+ 		X-Frame-Options "DENY"
+diff --git a/docker-compose.https.yml b/docker-compose.https.yml
+index ef0817c..5e44ea3 100644
+--- a/docker-compose.https.yml
++++ b/docker-compose.https.yml
+@@ -1,13 +1,13 @@
+-# همان سایت، این بار پشت HTTPS. این فایل کاملِ خودش است و با فایل اصلی ترکیب نمی‌شود:
++# The same site, behind HTTPS. This file stands alone — it does not merge with the other:
+ #
+ #   docker compose -f docker-compose.https.yml up -d --build
+ #
+-# عمداً کامل نوشته شده و به‌صورت override نیست، چون کامپوز لیست `ports` را به‌جای
+-# جایگزین‌کردن، به لیست قبلی اضافه می‌کند — یعنی با override، پورت ۸۰۸۸ باز می‌ماند و
+-# کنار https یک درِ بی‌رمزِ http هم باقی می‌گذاشت.
++# It is written out in full rather than as an override on purpose. Compose appends to a
++# `ports` list instead of replacing it, so as an override this would have left 8088 open
++# to the world: an unencrypted door standing next to the encrypted one.
+ #
+-# نام پروژه از نام همین پوشه می‌آید، پس ولوم `roadmap-data` همان ولوم قبلی است و
+-# داده‌ات دست‌نخورده منتقل می‌شود.
++# The project name comes from this directory, so `roadmap-data` is the same volume the
++# http setup uses and the data carries over untouched.
+ services:
+   api:
+     build: ./server
+@@ -23,9 +23,9 @@ services:
+       STAFF_PASSWORD_TARKASHVAND: ${STAFF_PASSWORD_TARKASHVAND:-}
+       STAFF_PASSWORD_AMIR: ${STAFF_PASSWORD_AMIR:-}
+       STAFF_PASSWORD_LEAD: ${STAFF_PASSWORD_LEAD:-}
+-      # دو پراکسی جلوی API هست (Caddy و بعد nginx)، پس آدرس واقعی کاربر دو پله عقب‌تر
+-      # در X-Forwarded-For نشسته. بدون این عدد، محدودیتِ تلاش ورود همه‌ی کاربرها را
+-      # یک نفر می‌بیند: خودِ nginx.
++      # Two proxies stand in front of the API here (Caddy, then nginx), so the visitor's
++      # real address sits two hops back in X-Forwarded-For. Without this, the login
++      # throttle sees one client for everybody — nginx — and locks the whole site at once.
+       TRUST_PROXY: 2
+     volumes:
+       - roadmap-data:/data
+@@ -36,7 +36,7 @@ services:
+       dockerfile: Dockerfile.web
+     restart: unless-stopped
+     depends_on: [api]
+-    # هیچ پورتی بیرون نمی‌دهد. تنها راه رسیدن به آن، Caddy است.
++    # Publishes nothing. Caddy is the only way in.
+ 
+   caddy:
+     image: caddy:2-alpine
+@@ -50,8 +50,8 @@ services:
+       - "443:443"
+     volumes:
+       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+-      # گواهی‌ها این‌جا می‌مانند. اگر این ولوم را پاک کنی، دفعه‌ی بعد گواهی از نو گرفته
+-      # می‌شود و Let's Encrypt سقف هفتگی دارد — پس بی‌دلیل پاکش نکن.
++      # Certificates live here. Delete this volume and the next start asks for fresh ones;
++      # Let's Encrypt has a weekly ceiling, so do not clear it without reason.
+       - caddy-data:/data
+       - caddy-config:/config
+ 
+diff --git a/server/seed/roadmap.json b/server/seed/roadmap.json
+index 090d0b9..b9ed7b2 100644
+--- a/server/seed/roadmap.json
++++ b/server/seed/roadmap.json
+@@ -347,10 +347,9 @@
+       "members": [
+         {
+           "id": "m-cirrus-1",
+-          "name": "آرش نیک‌روش",
+-          "seat": "داده",
++          "name": "اشکان حافظی",
++          "seat": "سرگروه",
+           "photo": "",
+-          "placeholder": true,
+           "traits": {},
+           "verdict": {
+             "call": "none",
+@@ -360,10 +359,9 @@
+         },
+         {
+           "id": "m-cirrus-2",
+-          "name": "مینا رستگار",
+-          "seat": "بک‌اند",
++          "name": "سبحان بهزادی‌پور",
++          "seat": "",
+           "photo": "",
+-          "placeholder": true,
+           "traits": {},
+           "verdict": {
+             "call": "none",
+@@ -373,10 +371,9 @@
+         },
+         {
+           "id": "m-cirrus-3",
+-          "name": "پویا صدرایی",
+-          "seat": "زیرساخت",
++          "name": "پرهام کوت‌زری",
++          "seat": "",
+           "photo": "",
+-          "placeholder": true,
+           "traits": {},
+           "verdict": {
+             "call": "none",
+@@ -395,10 +392,9 @@
+       "members": [
+         {
+           "id": "m-stratus-1",
+-          "name": "نگار موسوی",
+-          "seat": "داده",
++          "name": "مهدی خراسانی",
++          "seat": "سرگروه",
+           "photo": "",
+-          "placeholder": true,
+           "traits": {},
+           "verdict": {
+             "call": "none",
+@@ -408,10 +404,9 @@
+         },
+         {
+           "id": "m-stratus-2",
+-          "name": "سهیل بهرامی",
+-          "seat": "بک‌اند",
++          "name": "ارشا سبحانی",
++          "seat": "",
+           "photo": "",
+-          "placeholder": true,
+           "traits": {},
+           "verdict": {
+             "call": "none",
+@@ -421,10 +416,9 @@
+         },
+         {
+           "id": "m-stratus-3",
+-          "name": "رها کیانی",
+-          "seat": "زیرساخت",
++          "name": "بختیاری",
++          "seat": "",
+           "photo": "",
+-          "placeholder": true,
+           "traits": {},
+           "verdict": {
+             "call": "none",
+@@ -443,10 +437,9 @@
+       "members": [
+         {
+           "id": "m-cumulus-1",
+-          "name": "کیوان آذرمهر",
+-          "seat": "داده",
++          "name": "مهدی مختاری",
++          "seat": "سرگروه",
+           "photo": "",
+-          "placeholder": true,
+           "traits": {},
+           "verdict": {
+             "call": "none",
+@@ -456,10 +449,9 @@
+         },
+         {
+           "id": "m-cumulus-2",
+-          "name": "شیدا فراهانی",
+-          "seat": "بک‌اند",
++          "name": "سبحان ارشدی",
++          "seat": "",
+           "photo": "",
+-          "placeholder": true,
+           "traits": {},
+           "verdict": {
+             "call": "none",
+@@ -469,10 +461,9 @@
+         },
+         {
+           "id": "m-cumulus-3",
+-          "name": "بهراد سلطانی",
+-          "seat": "زیرساخت",
++          "name": "محمدامین جنگی",
++          "seat": "",
+           "photo": "",
+-          "placeholder": true,
+           "traits": {},
+           "verdict": {
+             "call": "none",
+@@ -491,10 +482,9 @@
+       "members": [
+         {
+           "id": "m-nimbus-1",
+-          "name": "ترانه دلشاد",
+-          "seat": "داده",
++          "name": "سیداحمد رکنی حسینی",
++          "seat": "سرگروه",
+           "photo": "",
+-          "placeholder": true,
+           "traits": {},
+           "verdict": {
+             "call": "none",
+@@ -504,10 +494,9 @@
+         },
+         {
+           "id": "m-nimbus-2",
+-          "name": "امید ورزنده",
+-          "seat": "بک‌اند",
++          "name": "حمید شفیع‌زاده",
++          "seat": "",
+           "photo": "",
+-          "placeholder": true,
+           "traits": {},
+           "verdict": {
+             "call": "none",
+@@ -517,10 +506,9 @@
+         },
+         {
+           "id": "m-nimbus-3",
+-          "name": "نازنین حکیمی",
+-          "seat": "زیرساخت",
++          "name": "محمدحسین پایدار",
++          "seat": "",
+           "photo": "",
+-          "placeholder": true,
+           "traits": {},
+           "verdict": {
+             "call": "none",
+@@ -530,10 +518,9 @@
+         },
+         {
+           "id": "m-nimbus-4",
+-          "name": "فرهاد مهربان",
+-          "seat": "تحلیل",
++          "name": "پارسا نصیری",
++          "seat": "",
+           "photo": "",
+-          "placeholder": true,
+           "traits": {},
+           "verdict": {
+             "call": "none",
+diff --git a/server/src/store.js b/server/src/store.js
+index fe12aad..d24b8c2 100644
+--- a/server/src/store.js
++++ b/server/src/store.js
+@@ -10,6 +10,45 @@ const SEED_FILE = resolve(process.env.SEED_FILE ?? new URL('../seed/roadmap.json
+ 
+ let state = null;
+ 
++// Has anyone actually done anything with this person yet?
++function untouched(member) {
++  return (
++    Object.keys(member.traits ?? {}).length === 0 &&
++    !member.photo &&
++    (member.verdict?.call ?? 'none') === 'none' &&
++    !member.verdict?.note
++  );
++}
++
++// The roster is written in the code, but the panel edits it too, so neither side can simply
++// win. The rule: a person nobody has touched yet takes their name from the seed, which is how
++// a roster correction in a release reaches a running instance. The moment a mentor scores
++// them or the lead renames them, the file's version is theirs and the seed stops overriding.
++// People added from the panel are kept; people dropped from the seed are kept too, because
++// deleting a real person is a decision for the panel, not for a deploy.
++function mergeTeams(seedTeams, savedTeams) {
++  if (!Array.isArray(savedTeams) || savedTeams.length === 0) return seedTeams;
++
++  const merged = seedTeams.map((seedTeam) => {
++    const savedTeam = savedTeams.find((t) => t.id === seedTeam.id);
++    if (!savedTeam) return seedTeam;
++
++    const members = (savedTeam.members ?? []).map((savedMember) => {
++      const seedMember = (seedTeam.members ?? []).find((m) => m.id === savedMember.id);
++      if (!seedMember || !untouched(savedMember)) return savedMember;
++      return { ...savedMember, name: seedMember.name, seat: seedMember.seat };
++    });
++
++    const known = new Set(members.map((m) => m.id));
++    for (const seedMember of seedTeam.members ?? []) if (!known.has(seedMember.id)) members.push(seedMember);
++
++    return { ...seedTeam, ...savedTeam, members };
++  });
++
++  for (const savedTeam of savedTeams) if (!merged.some((t) => t.id === savedTeam.id)) merged.push(savedTeam);
++  return merged;
++}
++
+ function load() {
+   const seed = JSON.parse(readFileSync(SEED_FILE, 'utf8'));
+   const base = {
+@@ -36,7 +75,7 @@ function load() {
+     weeks: filled(saved.weeks, base.weeks),
+     challenges: saved.challenges ?? base.challenges,
+     assignments: saved.assignments ?? [],
+-    teams: filled(saved.teams, base.teams),
++    teams: mergeTeams(base.teams, saved.teams),
+     // Accounts are identity, not content: the seed is authoritative so adding a mentor is a
+     // deploy, not a database edit. Names already changed in the panel are kept.
+     accounts: base.accounts.map((account) => {
+@@ -251,13 +290,10 @@ export function updateMember(memberId, patch) {
+   if (!found) return null;
+   const { member } = found;
+   return mutate(() => {
+-    // Editing a name or dropping in a real photo is what takes a person off the placeholder
+-    // roster — the flag is what the panel uses to say "this one is still fake".
++    // An empty photo is what the panel reads as "no picture yet", so there is no separate
++    // flag to keep in step with it.
+     for (const key of ['name', 'seat', 'photo']) {
+-      if (key in patch) {
+-        member[key] = String(patch[key] ?? '');
+-        member.placeholder = false;
+-      }
++      if (key in patch) member[key] = String(patch[key] ?? '');
+     }
+     if (patch.traits && typeof patch.traits === 'object') {
+       member.traits = member.traits ?? {};
+@@ -285,7 +321,6 @@ export function addMember(teamId, { name = 'عضو تازه', seat = '' } = {})
+       name,
+       seat,
+       photo: '',
+-      placeholder: true,
+       traits: {},
+       verdict: { call: 'none', note: '', updatedAt: null },
+     };
+diff --git a/src/components/LeadDesk.jsx b/src/components/LeadDesk.jsx
+index bdd401e..eba383e 100644
+--- a/src/components/LeadDesk.jsx
++++ b/src/components/LeadDesk.jsx
+@@ -107,7 +107,7 @@ function MemberRow({ member, axes, onSave, onRemove }) {
+             <div className="roster-id">
+               <strong>{member.name}</strong>
+               <span>{member.seat || '—'}</span>
+-              {member.placeholder && <span className="player-fake">موقت</span>}
++              {!member.photo && <span className="player-fake">بدون عکس</span>}
+               <button type="button" className="staff-link" onClick={() => setEdit(true)}>
+                 ویرایش
+               </button>
+diff --git a/src/components/MentorDesk.jsx b/src/components/MentorDesk.jsx
+index 7d548f0..711caa6 100644
+--- a/src/components/MentorDesk.jsx
++++ b/src/components/MentorDesk.jsx
+@@ -28,13 +28,13 @@ function PlayerCard({ member, axes, canRate, onSave }) {
+   const dirty = axes.some((a) => (draft[a.id] ?? 0) !== (member.traits?.[a.id] ?? 0));
+ 
+   return (
+-    <article className={`player ${open ? 'open' : ''} ${member.placeholder ? 'fake' : ''}`}>
++    <article className={`player ${open ? 'open' : ''} ${member.photo ? '' : 'fake'}`}>
+       <div className="player-face">
+         <Avatar person={member} size={64} />
+         <div className="player-id">
+           <strong>{member.name}</strong>
+           <span className="player-seat">{member.seat || '—'}</span>
+-          {member.placeholder && <span className="player-fake">اسم و عکس موقت</span>}
++          {!member.photo && <span className="player-fake">بدون عکس</span>}
+         </div>
+       </div>
+ 
+diff --git a/src/content/people.js b/src/content/people.js
+index 52d2c2e..8089d37 100644
+--- a/src/content/people.js
++++ b/src/content/people.js
+@@ -41,12 +41,13 @@ export const VERDICTS = [
+   { id: 'none', label: 'تصمیمی نگرفته‌ام' },
+ ];
+ 
+-const member = (id, name, seat) => ({
++// اسم‌ها واقعی‌اند؛ عکس‌ها هنوز نه. تا وقتی `photo` خالی باشد، سایت یک پرتره‌ی
++// تولیدی می‌کشد و پنل کنار اسم می‌نویسد «بدون عکس».
++const member = (id, name, seat = '') => ({
+   id,
+   name,
+   seat,
+   photo: '',
+-  placeholder: true,
+   traits: {},
+   verdict: { call: 'none', note: '', updatedAt: null },
+ });
+@@ -60,9 +61,9 @@ export const TEAMS = [
+     color: '#7fd1e8',
+     mentor: 'saleh',
+     members: [
+-      member('m-cirrus-1', 'آرش نیک‌روش', 'داده'),
+-      member('m-cirrus-2', 'مینا رستگار', 'بک‌اند'),
+-      member('m-cirrus-3', 'پویا صدرایی', 'زیرساخت'),
++      member('m-cirrus-1', 'اشکان حافظی', 'سرگروه'),
++      member('m-cirrus-2', 'سبحان بهزادی‌پور'),
++      member('m-cirrus-3', 'پرهام کوت‌زری'),
+     ],
+   },
+   {
+@@ -72,9 +73,9 @@ export const TEAMS = [
+     color: '#b69ad6',
+     mentor: 'asgarian',
+     members: [
+-      member('m-stratus-1', 'نگار موسوی', 'داده'),
+-      member('m-stratus-2', 'سهیل بهرامی', 'بک‌اند'),
+-      member('m-stratus-3', 'رها کیانی', 'زیرساخت'),
++      member('m-stratus-1', 'مهدی خراسانی', 'سرگروه'),
++      member('m-stratus-2', 'ارشا سبحانی'),
++      member('m-stratus-3', 'بختیاری'),
+     ],
+   },
+   {
+@@ -84,9 +85,9 @@ export const TEAMS = [
+     color: '#f5a623',
+     mentor: 'tarkashvand',
+     members: [
+-      member('m-cumulus-1', 'کیوان آذرمهر', 'داده'),
+-      member('m-cumulus-2', 'شیدا فراهانی', 'بک‌اند'),
+-      member('m-cumulus-3', 'بهراد سلطانی', 'زیرساخت'),
++      member('m-cumulus-1', 'مهدی مختاری', 'سرگروه'),
++      member('m-cumulus-2', 'سبحان ارشدی'),
++      member('m-cumulus-3', 'محمدامین جنگی'),
+     ],
+   },
+   {
+@@ -96,10 +97,10 @@ export const TEAMS = [
+     color: '#5fd39a',
+     mentor: 'amir',
+     members: [
+-      member('m-nimbus-1', 'ترانه دلشاد', 'داده'),
+-      member('m-nimbus-2', 'امید ورزنده', 'بک‌اند'),
+-      member('m-nimbus-3', 'نازنین حکیمی', 'زیرساخت'),
+-      member('m-nimbus-4', 'فرهاد مهربان', 'تحلیل'),
++      member('m-nimbus-1', 'سیداحمد رکنی حسینی', 'سرگروه'),
++      member('m-nimbus-2', 'حمید شفیع‌زاده'),
++      member('m-nimbus-3', 'محمدحسین پایدار'),
++      member('m-nimbus-4', 'پارسا نصیری'),
+     ],
+   },
+ ];
+-- 
+2.43.0
+

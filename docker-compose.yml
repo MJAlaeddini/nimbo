@@ -1,0 +1,31 @@
+services:
+  api:
+    build: ./server
+    restart: unless-stopped
+    environment:
+      ADMIN_USER: ${ADMIN_USER:-nimbo}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      # Mentors and the programme lead. A per-person value beats the shared one.
+      MENTOR_PASSWORD: ${MENTOR_PASSWORD:-}
+      LEAD_PASSWORD: ${LEAD_PASSWORD:-}
+      STAFF_PASSWORD_SALEH: ${STAFF_PASSWORD_SALEH:-}
+      STAFF_PASSWORD_ASGARIAN: ${STAFF_PASSWORD_ASGARIAN:-}
+      STAFF_PASSWORD_TARKASHVAND: ${STAFF_PASSWORD_TARKASHVAND:-}
+      STAFF_PASSWORD_AMIR: ${STAFF_PASSWORD_AMIR:-}
+      STAFF_PASSWORD_LEAD: ${STAFF_PASSWORD_LEAD:-}
+    volumes:
+      # The roadmap state lives here. Back this up and you have backed up everything.
+      - roadmap-data:/data
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    depends_on: [api]
+    ports:
+      - "${WEB_PORT:-8088}:80"
+
+volumes:
+  roadmap-data:

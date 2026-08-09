@@ -1,0 +1,22 @@
+node_modules/
+.env
+__pycache__/
+# secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.crt
+secrets/
+
+# deps & build
+node_modules/
+dist/
+build/
+.vite/
+
+# logs & os
+*.log
+npm-debug.log*
+.DS_Store

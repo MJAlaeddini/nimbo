@@ -1,0 +1,14 @@
+{
+  "name": "nimbo-roadmap-api",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "seed": "node scripts/build-seed.mjs",
+    "hash": "node -e \"import('./src/auth.js').then(m=>console.log(m.hashPassword(process.argv[1])))\""
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

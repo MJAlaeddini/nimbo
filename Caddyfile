@@ -1,0 +1,27 @@
+# Caddy sits in front of nginx and does one job: HTTPS. It takes a certificate from
+# Let's Encrypt, renews it on its own, and sends http traffic to https. No certificate
+# or key is ever created by hand.
+#
+# SITE_DOMAIN in .env decides which name this site answers on.
+
+{
+	email {$SITE_EMAIL:admin@example.com}
+}
+
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		# Off on purpose. This tells a browser to use https only, for a year, and a browser
+		# that has seen it once will refuse plain http for that name until the year is up —
+		# no matter what the server later says. Turn it on once you are sure you are staying
+		# on https and the certificate is good, not before.
+		# Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	reverse_proxy web:80
+}

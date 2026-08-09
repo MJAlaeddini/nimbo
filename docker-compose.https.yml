@@ -1,0 +1,61 @@
+# The same site, behind HTTPS. This file stands alone — it does not merge with the other:
+#
+#   docker compose -f docker-compose.https.yml up -d --build
+#
+# It is written out in full rather than as an override on purpose. Compose appends to a
+# `ports` list instead of replacing it, so as an override this would have left 8088 open
+# to the world: an unencrypted door standing next to the encrypted one.
+#
+# The project name comes from this directory, so `roadmap-data` is the same volume the
+# http setup uses and the data carries over untouched.
+services:
+  api:
+    build: ./server
+    restart: unless-stopped
+    environment:
+      ADMIN_USER: ${ADMIN_USER:-nimbo}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      MENTOR_PASSWORD: ${MENTOR_PASSWORD:-}
+      LEAD_PASSWORD: ${LEAD_PASSWORD:-}
+      STAFF_PASSWORD_SALEH: ${STAFF_PASSWORD_SALEH:-}
+      STAFF_PASSWORD_ASGARIAN: ${STAFF_PASSWORD_ASGARIAN:-}
+      STAFF_PASSWORD_TARKASHVAND: ${STAFF_PASSWORD_TARKASHVAND:-}
+      STAFF_PASSWORD_AMIR: ${STAFF_PASSWORD_AMIR:-}
+      STAFF_PASSWORD_LEAD: ${STAFF_PASSWORD_LEAD:-}
+      # Two proxies stand in front of the API here (Caddy, then nginx), so the visitor's
+      # real address sits two hops back in X-Forwarded-For. Without this, the login
+      # throttle sees one client for everybody — nginx — and locks the whole site at once.
+      TRUST_PROXY: 2
+    volumes:
+      - roadmap-data:/data
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    depends_on: [api]
+    # Publishes nothing. Caddy is the only way in.
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [web]
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN in .env}
+      SITE_EMAIL: ${SITE_EMAIL:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates live here. Delete this volume and the next start asks for fresh ones;
+      # Let's Encrypt has a weekly ceiling, so do not clear it without reason.
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  roadmap-data:
+  caddy-data:
+  caddy-config:
