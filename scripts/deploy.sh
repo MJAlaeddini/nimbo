@@ -57,11 +57,14 @@ else
   die "neither 'docker compose' nor 'docker-compose' is installed"
 fi
 
-# A tracked file edited by hand on the server would be silently reverted by the checkout
-# below. Stop instead: whoever made that edit should know it is about to disappear.
+# Tracked files belong to the repository: a deploy makes the checkout match the commit being
+# deployed, so hand edits to them are printed and then dropped rather than quietly pinning
+# the server to an old version. Untracked and ignored files are never touched by any of this,
+# which is what keeps .env — the passwords the whole thing runs on, and the one file that is
+# deliberately not in the repository — exactly where it is.
 if ! git diff --quiet HEAD -- 2>/dev/null; then
+  say "local edits to tracked files, discarding them"
   git --no-pager diff --stat HEAD -- >&2
-  die "the checkout has uncommitted changes to tracked files; commit or discard them, then deploy again"
 fi
 
 PREVIOUS_SHA="$(git rev-parse HEAD)"
@@ -113,7 +116,11 @@ git fetch --prune origin
 git rev-parse --verify "$TARGET_SHA^{commit}" >/dev/null 2>&1 || die "commit $TARGET_SHA is not in the fetched history"
 
 say "checking out $TARGET_SHA"
-git checkout --detach "$TARGET_SHA"
+git checkout --force --detach "$TARGET_SHA"
+
+# --force replaces tracked files only. If .env went missing here something is very wrong,
+# and compose would fail halfway up rather than at all, so check before building.
+[ -f .env ] || die ".env disappeared during the checkout — not building without it"
 
 say "building and starting"
 "${COMPOSE[@]}" up -d --build
@@ -141,7 +148,7 @@ done
 
 rollback() {
   say "rolling back to $PREVIOUS_SHA"
-  git checkout --detach "$PREVIOUS_SHA"
+  git checkout --force --detach "$PREVIOUS_SHA"
   "${COMPOSE[@]}" up -d --build
   printf '\nThe old commit is back up. The data was never touched, and a copy from just\n'
   printf 'before this deploy is at:\n  %s\n' "${BACKUP:-<none: there was no data yet>}"
