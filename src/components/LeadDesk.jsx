@@ -4,26 +4,42 @@ import { api, download } from '../lib/api';
 import { faDigits } from '../lib/time';
 import Avatar from './Avatar';
 import LearningView from './LearningView';
+import PanelTabs from './PanelTabs';
 import PowerChart from './PowerChart';
 import ScoreBar from './ScoreBar';
+import ThisWeek from './ThisWeek';
 import { BoltIcon, CheckIcon, FlagIcon, LockIcon } from './icons';
 
 const mean = (numbers) => (numbers.length > 0 ? numbers.reduce((a, b) => a + b, 0) / numbers.length : null);
 
 // میانگین هر تیم، محور به محور و در کل — همان چیزی که جدول را مرتب می‌کند.
-function summarise(team, assessments, metrics) {
-  const rows = assessments.filter((a) => a.teamId === team.id);
+//
+// از ارزیابی‌های افراد حساب می‌شود، نه از یک امتیاز تیمیِ جداگانه. تا وقتی این تابع از
+// assessments می‌خواند، جدول لیگ و کارت امتیاز هر دو «—» می‌ماندند: آن فرم دیگر پر
+// نمی‌شود و هیچ‌جای پنل نمی‌گفت چرا عددها خالی‌اند.
+function summarise(team, evaluations, axes) {
+  const rows = evaluations.filter((e) => e.teamId === team.id);
   const perAxis = {};
-  for (const metric of metrics) {
-    const values = rows.map((r) => r.scores?.[metric.id] ?? 0).filter((n) => n > 0);
-    perAxis[metric.id] = mean(values);
+  for (const axis of axes) {
+    perAxis[axis.id] = mean(rows.map((r) => r.scores?.[axis.id]).filter((n) => typeof n === 'number'));
   }
-  const all = rows.flatMap((r) => Object.values(r.scores ?? {})).filter((n) => n > 0);
-  const byWeek = rows
-    .map((r) => ({ weekId: r.weekId, value: mean(Object.values(r.scores ?? {}).filter((n) => n > 0)) }))
-    .filter((p) => p.value !== null)
-    .sort((a, b) => a.weekId - b.weekId);
-  return { rows, perAxis, overall: mean(all), byWeek, weeksScored: rows.length };
+  const all = rows.flatMap((r) => Object.values(r.scores ?? {})).filter((n) => typeof n === 'number');
+
+  // یک نقطه به‌ازای هر هفته: میانگین همه‌ی افرادِ ارزیابی‌شده‌ی تیم در آن هفته.
+  const weekIds = [...new Set(rows.map((r) => r.weekId))].sort((a, b) => a - b);
+  const byWeek = weekIds
+    .map((weekId) => ({
+      weekId,
+      value: mean(
+        rows
+          .filter((r) => r.weekId === weekId)
+          .flatMap((r) => Object.values(r.scores ?? {}))
+          .filter((n) => typeof n === 'number'),
+      ),
+    }))
+    .filter((p) => p.value !== null);
+
+  return { rows, perAxis, overall: mean(all), byWeek, weeksScored: weekIds.length };
 }
 
 // روند تیم در هفته‌هایی که امتیاز خورده‌اند. دو نقطه که نباشد، خطی هم نیست.
@@ -306,10 +322,11 @@ function AxisEditor({ axes, onRename, onAdd, onArchive }) {
 }
 
 export default function LeadDesk({ board, run }) {
-  const metrics = board.axes.metrics;
+  // همان محورهایی که منتور شنبه‌ها نمره می‌دهد. یک دسته معیار، یک جا نمره‌خورده.
+  const axes = board.axes.traits.filter((a) => !a.archived);
   const summaries = useMemo(
-    () => Object.fromEntries(board.teams.map((t) => [t.id, summarise(t, board.assessments, metrics)])),
-    [board.teams, board.assessments, metrics],
+    () => Object.fromEntries(board.teams.map((t) => [t.id, summarise(t, board.evaluations ?? [], axes)])),
+    [board.teams, board.evaluations, axes],
   );
   const ranked = useMemo(
     () => [...board.teams].sort((a, b) => (summaries[b.id].overall ?? -1) - (summaries[a.id].overall ?? -1)),
@@ -331,6 +348,26 @@ export default function LeadDesk({ board, run }) {
     );
     return { behind, undecided };
   }, [board.teams, summaries, ranked]);
+
+  const evaluations = board.evaluations ?? [];
+  const [tab, setTab] = useState('now');
+
+  // The badge on "این هفته" is how many people the mentors still owe a review for the
+  // active week. It is the one number on this desk that decays if nobody chases it, so it
+  // stays visible from whichever tab is open.
+  const owed = useMemo(() => {
+    const active = board.weeks.find((w) => w.status === 'active');
+    if (!active) return 0;
+    const done = new Set(evaluations.filter((e) => e.weekId === active.id).map((e) => e.memberId));
+    return board.teams.reduce((n, t) => n + t.members.filter((m) => !done.has(m.id)).length, 0);
+  }, [board.weeks, board.teams, evaluations]);
+
+  const tabs = [
+    { id: 'now', label: 'این هفته', count: owed },
+    { id: 'learning', label: 'ارزیابی یادگیری' },
+    { id: 'teams', label: 'تیم‌ها' },
+    { id: 'setup', label: 'معیارها و پشتیبان' },
+  ];
 
   if (!team) return <p className="staff-note">هنوز تیمی تعریف نشده.</p>;
 
@@ -361,6 +398,24 @@ export default function LeadDesk({ board, run }) {
         </dl>
       </header>
 
+      <PanelTabs tabs={tabs} active={tab} onPick={setTab} />
+
+      {tab === 'now' && (
+        <ThisWeek
+          teams={board.teams}
+          weeks={board.weeks}
+          evaluations={evaluations}
+          mentors={board.mentors}
+          onGoTeam={(id) => {
+            setPicked(id);
+            setTab('teams');
+          }}
+          onGoLearning={() => setTab('learning')}
+        />
+      )}
+
+      {tab === 'teams' && (
+       <>
       {attention.behind && (
         <p className="lead-flag">
           <FlagIcon size={14} />
@@ -399,14 +454,14 @@ export default function LeadDesk({ board, run }) {
             </span>
           </header>
           <div className="scoring-grid">
-            {metrics.map((metric) => (
+            {axes.map((axis) => (
               <ScoreBar
-                key={metric.id}
-                label={metric.label}
-                hint={metric.hint}
+                key={axis.id}
+                label={axis.label}
+                hint={axis.hint}
                 color={team.color}
                 readOnly
-                value={summary.perAxis[metric.id] ? Math.round(summary.perAxis[metric.id]) : 0}
+                value={summary.perAxis[axis.id] ? Math.round(summary.perAxis[axis.id]) : 0}
               />
             ))}
           </div>
@@ -417,7 +472,11 @@ export default function LeadDesk({ board, run }) {
                 .filter((r) => r.note)
                 .map((r) => (
                   <li key={r.id}>
-                    <span className="tnum">هفته‌ی {faDigits(r.weekId)}</span>
+                    {/* هر ردیف مال یک نفر است، پس بدون اسم، چند یادداشتِ یک هفته از هم
+                        قابل تشخیص نیستند. */}
+                    <span className="tnum">
+                      هفته‌ی {faDigits(r.weekId)} · {team.members.find((m) => m.id === r.memberId)?.name ?? '—'}
+                    </span>
                     <p>{r.note}</p>
                   </li>
                 ))}
@@ -509,22 +568,29 @@ export default function LeadDesk({ board, run }) {
           </div>
         </section>
       </div>
+       </>
+      )}
 
-      <Backups />
+      {tab === 'learning' && (
+        <LearningView
+          teams={board.teams}
+          axes={board.axes.traits}
+          weeks={board.weeks}
+          evaluations={evaluations}
+        />
+      )}
 
-      <LearningView
-        teams={board.teams}
-        axes={board.axes.traits}
-        weeks={board.weeks}
-        evaluations={board.evaluations ?? []}
-      />
-
-      <AxisEditor
-        axes={board.axes}
-        onRename={(kind, id, label) => run(() => api.renameAxis(kind, id, label))}
-        onAdd={(kind, body) => run(() => api.addAxis(kind, body))}
-        onArchive={(kind, id, archived) => run(() => api.archiveAxis(kind, id, archived))}
-      />
+      {tab === 'setup' && (
+        <>
+          <AxisEditor
+            axes={board.axes}
+            onRename={(kind, id, label) => run(() => api.renameAxis(kind, id, label))}
+            onAdd={(kind, body) => run(() => api.addAxis(kind, body))}
+            onArchive={(kind, id, archived) => run(() => api.archiveAxis(kind, id, archived))}
+          />
+          <Backups />
+        </>
+      )}
     </div>
   );
 }

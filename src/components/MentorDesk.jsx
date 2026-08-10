@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import { faDigits } from '../lib/time';
 import Avatar from './Avatar';
 import PowerChart from './PowerChart';
+import PanelTabs from './PanelTabs';
 import SaturdayReview from './SaturdayReview';
 import { BoltIcon, CheckIcon } from './icons';
 
@@ -134,6 +135,25 @@ export default function MentorDesk({ board, run }) {
       .filter((e) => e.memberId === memberId)
       .sort((a, b) => b.weekId - a.weekId)[0] ?? null;
 
+  const [tab, setTab] = useState('review');
+
+  // How many of this mentor's people they have not reviewed for the week on screen. It sits
+  // on the tab so it is still visible from the other two, which is the whole reason the
+  // count exists — the review is the one thing on this desk with a deadline.
+  const pending = useMemo(() => {
+    if (!team) return 0;
+    const done = new Set(
+      evaluations.filter((e) => e.weekId === weekId && e.author === board.me?.user).map((e) => e.memberId),
+    );
+    return team.members.filter((m) => !done.has(m.id)).length;
+  }, [team, evaluations, weekId, board.me]);
+
+  const tabs = [
+    { id: 'review', label: `ارزیابی شنبه`, count: pending },
+    { id: 'squad', label: 'ترکیب تیم' },
+    { id: 'obs', label: 'مشاهده‌ها' },
+  ];
+
   if (!team) {
     return <p className="staff-note">هنوز تیمی به شما وصل نشده. مسئول برنامه این را از پنل خودش درست می‌کند.</p>;
   }
@@ -182,52 +202,62 @@ export default function MentorDesk({ board, run }) {
         </section>
       )}
 
-      <section className="staff-card squad">
-        <header className="staff-card-head">
-          <h3>ترکیب تیم</h3>
-          <span className="staff-note">چارت هر نفر، از آخرین ارزیابی شنبه‌ی او.</span>
-        </header>
-        <div className="squad-grid">
-          {team.members.map((member) => (
-            <PlayerCard
-              key={member.id}
-              member={member}
-              axes={board.axes.traits.filter((a) => !a.archived)}
-              latest={latestFor(member.id)}
-            />
-          ))}
-        </div>
-      </section>
+      <PanelTabs tabs={tabs} active={tab} onPick={setTab} />
 
-      <div className="weekpick" role="group" aria-label="هفته">
-        {board.weeks.map((week) => (
-          <button
-            key={week.id}
-            type="button"
-            className={`weekpick-item ${week.id === weekId ? 'on' : ''} ${week.status === 'locked' ? 'shut' : ''}`}
-            onClick={() => setWeekId(week.id)}
-          >
-            {faDigits(week.id)}
-          </button>
-        ))}
-      </div>
+      {tab === 'review' && (
+        <>
+          <div className="weekpick" role="group" aria-label="هفته">
+            {board.weeks.map((week) => (
+              <button
+                key={week.id}
+                type="button"
+                className={`weekpick-item ${week.id === weekId ? 'on' : ''} ${week.status === 'locked' ? 'shut' : ''}`}
+                onClick={() => setWeekId(week.id)}
+              >
+                {faDigits(week.id)}
+              </button>
+            ))}
+          </div>
 
-      <SaturdayReview
-        team={team}
-        axes={board.axes.traits}
-        weekId={weekId}
-        evaluations={board.evaluations ?? []}
-        me={board.me?.user}
-        onSave={(body) => run(() => api.saveEvaluation(body))}
-      />
+          <SaturdayReview
+            team={team}
+            axes={board.axes.traits}
+            weekId={weekId}
+            evaluations={evaluations}
+            me={board.me?.user}
+            onSave={(body) => run(() => api.saveEvaluation(body))}
+          />
+        </>
+      )}
 
-      <Observations
-        team={team}
-        weekId={weekId}
-        observations={board.observations}
-        onAdd={(body) => run(() => api.addObservation(body))}
-        onRemove={(id) => run(() => api.removeObservation(id))}
-      />
+      {tab === 'squad' && (
+        <section className="staff-card squad">
+          <header className="staff-card-head">
+            <h3>ترکیب تیم</h3>
+            <span className="staff-note">چارت هر نفر، از آخرین ارزیابی شنبه‌ی او.</span>
+          </header>
+          <div className="squad-grid">
+            {team.members.map((member) => (
+              <PlayerCard
+                key={member.id}
+                member={member}
+                axes={board.axes.traits.filter((a) => !a.archived)}
+                latest={latestFor(member.id)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {tab === 'obs' && (
+        <Observations
+          team={team}
+          weekId={weekId}
+          observations={board.observations}
+          onAdd={(body) => run(() => api.addObservation(body))}
+          onRemove={(id) => run(() => api.removeObservation(id))}
+        />
+      )}
     </div>
   );
 }
