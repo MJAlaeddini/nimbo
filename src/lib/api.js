@@ -92,8 +92,12 @@ export const api = {
   patchTeam: (id, patch) => request(`/api/staff/teams/${id}`, { method: 'PATCH', body: patch, auth: true }),
   addMember: (teamId, body) => request(`/api/staff/teams/${teamId}/members`, { method: 'POST', body, auth: true }),
   removeMember: (id) => request(`/api/staff/members/${id}`, { method: 'DELETE', auth: true }),
+  saveEvaluation: (body) => request('/api/staff/evaluations', { method: 'PUT', body, auth: true }),
   renameAxis: (kind, id, label) =>
     request(`/api/staff/axes/${kind}/${id}`, { method: 'PATCH', body: { label }, auth: true }),
+  addAxis: (kind, body) => request(`/api/staff/axes/${kind}`, { method: 'POST', body, auth: true }),
+  archiveAxis: (kind, id, archived) =>
+    request(`/api/staff/axes/${kind}/${id}`, { method: 'PATCH', body: { archived }, auth: true }),
   backups: () => request('/api/staff/backups', { auth: true }),
   makeBackup: () => request('/api/staff/backups', { method: 'POST', auth: true }),
 

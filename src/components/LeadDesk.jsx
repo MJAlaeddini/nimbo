@@ -3,6 +3,7 @@ import { OBSERVATION_KINDS, VERDICTS } from '../content/people';
 import { api, download } from '../lib/api';
 import { faDigits } from '../lib/time';
 import Avatar from './Avatar';
+import LearningView from './LearningView';
 import PowerChart from './PowerChart';
 import ScoreBar from './ScoreBar';
 import { BoltIcon, CheckIcon, FlagIcon, LockIcon } from './icons';
@@ -228,38 +229,76 @@ function Backups() {
   );
 }
 
-function AxisEditor({ axes, onRename }) {
+// Criteria change as the programme works out what it is actually measuring, so they can be
+// added and retired here, not only renamed.
+//
+// Retiring keeps the axis and its scores and stops offering it for new scoring. Deleting
+// would rewrite the past: a week's average would change months later with no record of why.
+function AxisEditor({ axes, onRename, onAdd, onArchive }) {
   const [open, setOpen] = useState(false);
+  const [label, setLabel] = useState('');
+  const [ask, setAsk] = useState('');
+
   return (
     <section className="staff-card axes">
       <header className="staff-card-head">
         <h3>معیارها</h3>
         <button type="button" className="staff-link" onClick={() => setOpen(!open)}>
-          {open ? 'بستن' : 'تغییر اسم معیارها'}
+          {open ? 'بستن' : 'ویرایش معیارها'}
         </button>
       </header>
       <p className="staff-note">
-        اسم معیار عوض می‌شود، امتیازهایی که تا حالا داده شده سر جایشان می‌مانند — پس تا وقتی معیارها قطعی نشده‌اند
-        هم می‌شود امتیاز داد.
+        اسم معیار عوض می‌شود و امتیازهای داده‌شده سر جایشان می‌مانند. معیار بازنشسته هم پاک نمی‌شود — از فرم
+        شنبه برداشته می‌شود ولی نمره‌های قبلی‌اش خوانا می‌مانند.
       </p>
       {open && (
-        <div className="axes-grid">
-          {[
-            ['traits', 'چارت قدرت هر نفر', axes.traits],
-            ['metrics', 'امتیاز هفتگی تیم', axes.metrics],
-          ].map(([kind, title, list]) => (
-            <div key={kind} className="axes-col">
-              <h4>{title}</h4>
-              {list.map((axis) => (
-                <input
-                  key={axis.id}
-                  className="axis-input"
-                  defaultValue={axis.label}
-                  onBlur={(e) => e.target.value.trim() !== axis.label && onRename(kind, axis.id, e.target.value)}
-                />
-              ))}
+        <div className="axes-col">
+          {axes.traits.map((axis) => (
+            <div key={axis.id} className={`axis-row ${axis.archived ? 'archived' : ''}`}>
+              <input
+                className="axis-input"
+                defaultValue={axis.label}
+                onBlur={(e) => e.target.value.trim() !== axis.label && onRename('traits', axis.id, e.target.value)}
+              />
+              <button
+                type="button"
+                className="staff-link"
+                onClick={() => onArchive('traits', axis.id, !axis.archived)}
+              >
+                {axis.archived ? 'برگردان' : 'بازنشسته کن'}
+              </button>
+              {axis.ask && <em className="axis-ask">{axis.ask}</em>}
             </div>
           ))}
+
+          <div className="axis-new">
+            <h4>معیار تازه</h4>
+            <input
+              className="axis-input"
+              value={label}
+              placeholder="اسم معیار"
+              onChange={(e) => setLabel(e.target.value)}
+            />
+            <input
+              className="axis-input"
+              value={ask}
+              placeholder="سؤالی که منتور شنبه می‌پرسد — بدون این، عدد هر منتور معنی خودش را دارد"
+              onChange={(e) => setAsk(e.target.value)}
+            />
+            <button
+              type="button"
+              className="staff-primary"
+              disabled={!label.trim()}
+              onClick={() =>
+                onAdd('traits', { label, ask }).then(() => {
+                  setLabel('');
+                  setAsk('');
+                })
+              }
+            >
+              اضافه کن
+            </button>
+          </div>
         </div>
       )}
     </section>
@@ -473,7 +512,19 @@ export default function LeadDesk({ board, run }) {
 
       <Backups />
 
-      <AxisEditor axes={board.axes} onRename={(kind, id, label) => run(() => api.renameAxis(kind, id, label))} />
+      <LearningView
+        teams={board.teams}
+        axes={board.axes.traits}
+        weeks={board.weeks}
+        evaluations={board.evaluations ?? []}
+      />
+
+      <AxisEditor
+        axes={board.axes}
+        onRename={(kind, id, label) => run(() => api.renameAxis(kind, id, label))}
+        onAdd={(kind, body) => run(() => api.addAxis(kind, body))}
+        onArchive={(kind, id, archived) => run(() => api.archiveAxis(kind, id, archived))}
+      />
     </div>
   );
 }

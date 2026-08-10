@@ -4,8 +4,8 @@ import { api } from '../lib/api';
 import { faDigits } from '../lib/time';
 import Avatar from './Avatar';
 import PowerChart from './PowerChart';
-import ScoreBar from './ScoreBar';
-import { BoltIcon, CheckIcon, FlagIcon } from './icons';
+import SaturdayReview from './SaturdayReview';
+import { BoltIcon, CheckIcon } from './icons';
 
 const KIND = Object.fromEntries(OBSERVATION_KINDS.map((k) => [k.id, k]));
 
@@ -22,13 +22,12 @@ function Crest({ team, size = 76 }) {
   );
 }
 
-function PlayerCard({ member, axes, canRate, onSave }) {
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(member.traits ?? {});
-  const dirty = axes.some((a) => (draft[a.id] ?? 0) !== (member.traits?.[a.id] ?? 0));
-
+// The chart is a read-out now, not an input. Scoring happens once, in the Saturday review
+// below, which writes a row per week; this shows the newest of those rows. When both could
+// be edited the last one saved silently won, and the two disagreed about which week it was.
+function PlayerCard({ member, axes, latest }) {
   return (
-    <article className={`player ${open ? 'open' : ''} ${member.photo ? '' : 'fake'}`}>
+    <article className={`player ${member.photo ? '' : 'fake'}`}>
       <div className="player-face">
         <Avatar person={member} size={64} />
         <div className="player-id">
@@ -40,119 +39,10 @@ function PlayerCard({ member, axes, canRate, onSave }) {
 
       <PowerChart axes={axes} values={member.traits ?? {}} size={188} color="var(--team-color)" />
 
-      {canRate && (
-        <button type="button" className="player-toggle" onClick={() => setOpen(!open)}>
-          {open ? 'بستن' : 'امتیاز بده'}
-        </button>
-      )}
-
-      {open && canRate && (
-        <div className="player-rate">
-          {axes.map((axis) => (
-            <ScoreBar
-              key={axis.id}
-              label={axis.label}
-              value={draft[axis.id] ?? 0}
-              onChange={(v) => setDraft({ ...draft, [axis.id]: v })}
-            />
-          ))}
-          <button
-            type="button"
-            className="staff-primary"
-            disabled={!dirty}
-            onClick={() => onSave({ traits: draft }).then(() => setOpen(false))}
-          >
-            <CheckIcon size={13} />
-            ثبت چارت قدرت
-          </button>
-        </div>
-      )}
+      <span className="player-asof">
+        {latest ? `آخرین ارزیابی: هفته‌ی ${faDigits(latest.weekId)}` : 'هنوز ارزیابی نشده'}
+      </span>
     </article>
-  );
-}
-
-function WeekScoring({ team, weeks, metrics, assessment, onSave, weekId, onPickWeek }) {
-  const [scores, setScores] = useState(assessment?.scores ?? {});
-  const [note, setNote] = useState(assessment?.note ?? '');
-  const [saved, setSaved] = useState(false);
-
-  // پریدن به هفته‌ی دیگر یعنی فرم باید امتیازهای همان هفته را نشان دهد.
-  const key = `${team.id}:${weekId}`;
-  const [seen, setSeen] = useState(key);
-  if (seen !== key) {
-    setSeen(key);
-    setScores(assessment?.scores ?? {});
-    setNote(assessment?.note ?? '');
-    setSaved(false);
-  }
-
-  const given = metrics.filter((m) => (scores[m.id] ?? 0) > 0);
-  const average = given.length > 0 ? (given.reduce((a, m) => a + scores[m.id], 0) / given.length).toFixed(1) : '—';
-
-  return (
-    <section className="staff-card scoring">
-      <header className="staff-card-head">
-        <h3>
-          <FlagIcon size={15} />
-          امتیاز این هفته
-        </h3>
-        <span className="scoring-avg">
-          میانگین <b className="tnum">{average === '—' ? '—' : faDigits(average)}</b>
-        </span>
-      </header>
-
-      <div className="weekpick" role="group" aria-label="هفته">
-        {weeks.map((week) => (
-          <button
-            key={week.id}
-            type="button"
-            className={`weekpick-item ${week.id === weekId ? 'on' : ''} ${week.status === 'locked' ? 'shut' : ''}`}
-            onClick={() => onPickWeek(week.id)}
-          >
-            {faDigits(week.id)}
-          </button>
-        ))}
-      </div>
-
-      <div className="scoring-grid">
-        {metrics.map((metric) => (
-          <ScoreBar
-            key={metric.id}
-            label={metric.label}
-            hint={metric.hint}
-            color={team.color}
-            value={scores[metric.id] ?? 0}
-            onChange={(v) => {
-              setScores({ ...scores, [metric.id]: v });
-              setSaved(false);
-            }}
-          />
-        ))}
-      </div>
-
-      <label className="staff-field">
-        <span>یادداشت هفته</span>
-        <textarea
-          rows={3}
-          value={note}
-          placeholder="یک پاراگراف: این هفته چه گذشت و عدد بالا از کجا آمد."
-          onChange={(e) => {
-            setNote(e.target.value);
-            setSaved(false);
-          }}
-        />
-      </label>
-
-      <button
-        type="button"
-        className="staff-primary"
-        onClick={() => onSave({ teamId: team.id, weekId, scores, note }).then(() => setSaved(true))}
-      >
-        <CheckIcon size={13} />
-        ثبت امتیاز هفته‌ی {faDigits(weekId)}
-      </button>
-      {saved && <span className="staff-ok">ثبت شد.</span>}
-    </section>
   );
 }
 
@@ -225,16 +115,24 @@ export default function MentorDesk({ board, run }) {
     return active?.id ?? board.weeks[0]?.id ?? 1;
   });
 
-  const assessment = useMemo(
-    () => board.assessments.find((a) => a.teamId === team?.id && a.weekId === weekId) ?? null,
-    [board.assessments, team, weekId],
-  );
+  const evaluations = board.evaluations ?? [];
   const hints = board.hints.filter((h) => h.teamId === team?.id);
+
+  // The team's number is its people's numbers, averaged. Nothing stores it, so it cannot
+  // drift away from what the mentor actually recorded about each person.
   const squadAverage = useMemo(() => {
-    const rows = board.assessments.filter((a) => a.teamId === team?.id);
-    const all = rows.flatMap((a) => Object.values(a.scores ?? {})).filter((n) => n > 0);
+    const all = evaluations
+      .filter((e) => e.teamId === team?.id)
+      .flatMap((e) => Object.values(e.scores ?? {}))
+      .filter((n) => typeof n === 'number');
     return all.length > 0 ? (all.reduce((x, y) => x + y, 0) / all.length).toFixed(1) : null;
-  }, [board.assessments, team]);
+  }, [evaluations, team]);
+
+  // The newest row per person, for the chart's "as of" line.
+  const latestFor = (memberId) =>
+    evaluations
+      .filter((e) => e.memberId === memberId)
+      .sort((a, b) => b.weekId - a.weekId)[0] ?? null;
 
   if (!team) {
     return <p className="staff-note">هنوز تیمی به شما وصل نشده. مسئول برنامه این را از پنل خودش درست می‌کند.</p>;
@@ -287,29 +185,40 @@ export default function MentorDesk({ board, run }) {
       <section className="staff-card squad">
         <header className="staff-card-head">
           <h3>ترکیب تیم</h3>
-          <span className="staff-note">چارت قدرت هر نفر را خودتان پر می‌کنید؛ محورها هنوز قطعی نیستند.</span>
+          <span className="staff-note">چارت هر نفر، از آخرین ارزیابی شنبه‌ی او.</span>
         </header>
         <div className="squad-grid">
           {team.members.map((member) => (
             <PlayerCard
               key={member.id}
               member={member}
-              axes={board.axes.traits}
-              canRate
-              onSave={(patch) => run(() => api.patchMember(member.id, patch))}
+              axes={board.axes.traits.filter((a) => !a.archived)}
+              latest={latestFor(member.id)}
             />
           ))}
         </div>
       </section>
 
-      <WeekScoring
+      <div className="weekpick" role="group" aria-label="هفته">
+        {board.weeks.map((week) => (
+          <button
+            key={week.id}
+            type="button"
+            className={`weekpick-item ${week.id === weekId ? 'on' : ''} ${week.status === 'locked' ? 'shut' : ''}`}
+            onClick={() => setWeekId(week.id)}
+          >
+            {faDigits(week.id)}
+          </button>
+        ))}
+      </div>
+
+      <SaturdayReview
         team={team}
-        weeks={board.weeks}
-        metrics={board.axes.metrics}
-        assessment={assessment}
+        axes={board.axes.traits}
         weekId={weekId}
-        onPickWeek={setWeekId}
-        onSave={(body) => run(() => api.saveAssessment(body))}
+        evaluations={board.evaluations ?? []}
+        me={board.me?.user}
+        onSave={(body) => run(() => api.saveEvaluation(body))}
       />
 
       <Observations

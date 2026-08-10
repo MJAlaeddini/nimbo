@@ -91,6 +91,16 @@ app.put('/api/staff/assessments', staffOnly, (req, res) => {
   return ok(res, store.saveAssessment(teamId, weekId, { scores, note }, req.staff.user));
 });
 
+app.put('/api/staff/evaluations', staffOnly, (req, res) => {
+  // Ownership is resolved from where the person actually is, not from a teamId the caller
+  // sent, and it is checked before anything is written — a 403 after a successful save
+  // would still have saved it.
+  const teamId = store.memberTeamId(req.body?.memberId);
+  if (!teamId) return res.status(400).json({ error: 'unknown member' });
+  if (!ownsTeam(req.staff, teamId)) return denied(res);
+  return ok(res, store.saveEvaluation(req.body ?? {}, req.staff.user));
+});
+
 app.post('/api/staff/observations', staffOnly, (req, res) => {
   if (!ownsTeam(req.staff, req.body?.teamId)) return denied(res);
   const observation = store.addObservation(req.body ?? {}, req.staff.user);
@@ -169,11 +179,21 @@ app.post('/api/staff/teams/:id/members', leadOnly, (req, res) => {
 
 app.delete('/api/staff/members/:id', leadOnly, (req, res) => ok(res, store.removeMember(req.params.id)));
 
+const axisGroup = (kind) => (kind === 'traits' || kind === 'metrics' ? kind : null);
+
 // Renaming an axis keeps its id, so every score already given against it survives the rename.
 app.patch('/api/staff/axes/:kind/:id', leadOnly, (req, res) => {
   const { kind, id } = req.params;
-  if (kind !== 'traits' && kind !== 'metrics') return res.status(400).json({ error: 'unknown axis group' });
+  if (!axisGroup(kind)) return res.status(400).json({ error: 'unknown axis group' });
+  if (typeof req.body?.archived === 'boolean') return ok(res, store.archiveAxis(kind, id, req.body.archived));
   return ok(res, store.renameAxis(kind, id, req.body?.label));
+});
+
+app.post('/api/staff/axes/:kind', leadOnly, (req, res) => {
+  const { kind } = req.params;
+  if (!axisGroup(kind)) return res.status(400).json({ error: 'unknown axis group' });
+  const axis = store.addAxis(kind, req.body ?? {});
+  return axis ? res.status(201).json(axis) : res.status(400).json({ error: 'an axis needs a label' });
 });
 
 // --- admin -------------------------------------------------------------------

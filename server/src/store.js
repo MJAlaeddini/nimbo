@@ -60,6 +60,7 @@ function load() {
     accounts: seed.accounts ?? [],
     axes: seed.axes ?? { traits: [], metrics: [] },
     assessments: [],
+    evaluations: [],
     observations: [],
     hints: [],
   };
@@ -83,13 +84,45 @@ function load() {
       return kept ? { ...account, name: kept.name ?? account.name } : account;
     }),
     axes: {
-      traits: filled(saved.axes?.traits, base.axes.traits),
-      metrics: filled(saved.axes?.metrics, base.axes.metrics),
+      traits: mergeAxes(base.axes.traits, saved.axes?.traits),
+      metrics: mergeAxes(base.axes.metrics, saved.axes?.metrics),
     },
     assessments: saved.assessments ?? [],
+    evaluations: saved.evaluations ?? [],
     observations: saved.observations ?? [],
     hints: saved.hints ?? [],
   };
+}
+
+// The axes follow the same rule as the roster: the seed wins where nobody has intervened,
+// and the panel wins everywhere it has.
+//
+// A plain `saved ?? seed` would have frozen the first version of the criteria into every
+// running instance — the panel writes the whole list on the first edit, so the saved copy
+// is never empty again and a revised criterion in a release could never reach a server.
+// Criteria are exactly the thing this programme expects to keep changing, so:
+//
+//   - an axis the seed still defines takes its wording from the seed, unless the lead
+//     renamed it in the panel, in which case their label stays
+//   - an axis added from the panel is kept
+//   - an axis the seed dropped is kept and marked archived: scores already given against
+//     it stay readable, but it is not offered for new scoring
+function mergeAxes(seedAxes = [], savedAxes) {
+  if (!Array.isArray(savedAxes) || savedAxes.length === 0) return seedAxes;
+
+  const merged = seedAxes.map((seedAxis) => {
+    const saved = savedAxes.find((a) => a.id === seedAxis.id);
+    if (!saved) return seedAxis;
+    // `renamed` is set by renameAxis. Without it the label is still whatever a release said.
+    return saved.renamed ? { ...seedAxis, label: saved.label, renamed: true } : seedAxis;
+  });
+
+  const known = new Set(merged.map((a) => a.id));
+  for (const saved of savedAxes) {
+    if (known.has(saved.id)) continue;
+    merged.push(saved.custom ? saved : { ...saved, archived: true });
+  }
+  return merged;
 }
 
 function persist() {
@@ -354,6 +387,48 @@ export function renameAxis(kind, id, label) {
   return mutate(() => {
     axis.label = String(label ?? '').trim() || axis.label;
     delete axis.placeholder;
+    // Marks this label as the panel's, so a later release does not overwrite it. See
+    // mergeAxes: without this flag the seed's wording wins on every restart.
+    axis.renamed = true;
+    return axis;
+  });
+}
+
+// Criteria are meant to move as the programme learns what it is actually measuring, so
+// they can be added and retired — until now only renamed, which is why the original six
+// were still sitting there marked `placeholder`.
+export function addAxis(kind, { label, hint = '', ask = '' }) {
+  const group = state.axes[kind];
+  if (!Array.isArray(group)) return null;
+  const text = String(label ?? '').trim();
+  if (!text) return null;
+
+  return mutate(() => {
+    const axis = {
+      // Prefixed and random so a panel-made axis can never collide with an id a future
+      // release introduces, which would silently merge two different criteria's scores.
+      id: `x-${randomUUID().slice(0, 8)}`,
+      label: text,
+      hint: String(hint ?? '').trim(),
+      ask: String(ask ?? '').trim(),
+      custom: true,
+    };
+    group.push(axis);
+    return axis;
+  });
+}
+
+// Retiring an axis hides it from new scoring and leaves every score already given against
+// it in place. Deleting outright would quietly rewrite the past: a week's average would
+// change months after the fact, and nobody would know why.
+export function archiveAxis(kind, id, archived = true) {
+  const group = state.axes[kind];
+  if (!Array.isArray(group)) return null;
+  const axis = group.find((a) => a.id === id);
+  if (!axis) return null;
+  return mutate(() => {
+    if (archived) axis.archived = true;
+    else delete axis.archived;
     return axis;
   });
 }
@@ -384,6 +459,88 @@ export function saveAssessment(teamId, weekId, { scores = {}, note = '' }, autho
     assessment.updatedAt = new Date().toISOString();
     return assessment;
   });
+}
+
+// --- evaluations: one person, one week, by one mentor ------------------------
+//
+// This is the record the whole panel is built on, and it is deliberately keyed by week.
+// The earlier per-person scores lived in `member.traits` as a single flat map that each
+// save overwrote, so week seven destroyed week two and "has this person improved?" was a
+// question the data could not answer at all. A row per week answers it by existing.
+//
+// The team's standing is not stored anywhere: it is the average of its people, computed
+// when asked. One judgement per person per week, and nothing to keep in sync.
+
+const clampScore = (value) => Math.max(0, Math.min(10, Math.round(Number(value) || 0)));
+
+export function listEvaluations() {
+  return state.evaluations;
+}
+
+export function findEvaluation(memberId, weekId, author) {
+  return (
+    state.evaluations.find(
+      (e) => e.memberId === memberId && e.weekId === Number(weekId) && e.author === author,
+    ) ?? null
+  );
+}
+
+// A mentor may revise their own row all week; they cannot touch another mentor's. Two
+// mentors on one person is therefore two rows, not a fight over one.
+export function saveEvaluation(
+  { memberId, weekId, scores = {}, learned = '', gap = '', defence = {}, note = '' },
+  author,
+) {
+  const found = findMemberTeam(memberId);
+  if (!found) return null;
+
+  return mutate(() => {
+    let row = findEvaluation(memberId, weekId, author);
+    if (!row) {
+      row = {
+        id: randomUUID(),
+        memberId,
+        // Denormalised so the mentor/lead scoping in staff.js filters these rows by the
+        // same `row.teamId` rule as everything else, with no special case.
+        teamId: found.team.id,
+        weekId: Number(weekId),
+        author,
+        scores: {},
+        createdAt: new Date().toISOString(),
+      };
+      state.evaluations.push(row);
+    }
+
+    for (const [axis, value] of Object.entries(scores)) row.scores[axis] = clampScore(value);
+    row.learned = String(learned ?? '').trim();
+    row.gap = String(gap ?? '').trim();
+    row.defence = {
+      question: String(defence.question ?? '').trim(),
+      outcome: String(defence.outcome ?? 'absent'),
+    };
+    row.note = String(note ?? '').trim();
+    row.updatedAt = new Date().toISOString();
+
+    // The power chart still reads member.traits, and it should show where the person is
+    // now rather than where they were the first time anyone scored them. Kept as a cache
+    // of the newest row — the rows remain the record, this is just the current face of it.
+    found.member.traits = { ...row.scores };
+
+    return row;
+  });
+}
+
+// Which team a person is on, for an ownership check that has to happen before any write.
+export function memberTeamId(memberId) {
+  return findMemberTeam(memberId)?.team.id ?? null;
+}
+
+function findMemberTeam(memberId) {
+  for (const team of state.teams) {
+    const member = (team.members ?? []).find((m) => m.id === memberId);
+    if (member) return { team, member };
+  }
+  return null;
 }
 
 // --- observations: what a mentor saw -----------------------------------------

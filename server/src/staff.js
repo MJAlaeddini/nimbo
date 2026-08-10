@@ -24,6 +24,9 @@ export function staffBoard(staff) {
     teams,
     mentors: accounts.filter((a) => a.role === 'mentor'),
     assessments: mine(store.listAssessments()),
+    // Carries teamId for exactly this reason: a mentor sees their own team's rows and
+    // nothing else, under the same rule as everything above.
+    evaluations: mine(store.listEvaluations()),
     observations: mine(store.listObservations()),
     hints: mine(store.listHints()),
   };
