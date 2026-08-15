@@ -1410,3 +1410,16 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
   .nowlist li{grid-template-columns:1fr auto}
   .now-missing{grid-column:1/-1;text-align:right}
 }
+
+/* --- ویرایش متن هفته در پنل ادمین ------------------------------------------ */
+
+.adm-text{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.adm-edited-dot{display:inline-block;width:7px;height:7px;margin-right:7px;border-radius:50%;background:var(--gold);vertical-align:middle}
+.adm-text-body{display:grid;gap:14px;margin-top:14px}
+.adm-field{display:grid;gap:6px}
+.adm-field>span{display:flex;align-items:center;gap:10px;color:var(--lav-dim);font-size:.76rem}
+.adm-field textarea,.adm-field input{padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:rgba(13,5,24,.5);color:var(--ink);font:inherit;font-size:.84rem;line-height:1.9;resize:vertical}
+.adm-field textarea:focus,.adm-field input:focus{outline:0;border-color:var(--gold)}
+/* بازگرداندن فقط وقتی دیده می‌شود که فیلدی واقعاً ویرایش شده باشد. */
+.adm-revert{border:0;background:none;color:var(--gold);font:inherit;font-size:.72rem;cursor:pointer;text-decoration:underline;padding:0}
+.adm-ok{color:var(--ok);font-size:.74rem}

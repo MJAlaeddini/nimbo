@@ -10,6 +10,11 @@ const SEED_FILE = resolve(process.env.SEED_FILE ?? new URL('../seed/roadmap.json
 
 let state = null;
 
+// The seed as it was read this boot. Kept so that clearing a week's text in the panel can
+// put the release's wording back immediately, instead of leaving the field empty until the
+// next restart happens to reload it.
+let seedWeeks = [];
+
 // Has anyone actually done anything with this person yet?
 function untouched(member) {
   return (
@@ -51,6 +56,10 @@ function mergeTeams(seedTeams, savedTeams) {
 
 function load() {
   const seed = JSON.parse(readFileSync(SEED_FILE, 'utf8'));
+  // Cloned, not referenced. On a first boot `state.weeks` is the seed's own array of the
+  // seed's own objects, so editing a week in the panel would rewrite the copy we keep to
+  // revert to — and "undo" would restore the edit it was meant to undo.
+  seedWeeks = structuredClone(seed.weeks ?? []);
   const base = {
     phases: seed.phases ?? {},
     weeks: seed.weeks ?? [],
@@ -73,7 +82,7 @@ function load() {
   const filled = (value, fallback) => (Array.isArray(value) && value.length > 0 ? value : fallback);
   return {
     phases: Object.keys(saved.phases ?? {}).length > 0 ? saved.phases : base.phases,
-    weeks: filled(saved.weeks, base.weeks),
+    weeks: mergeWeeks(base.weeks, saved.weeks),
     challenges: saved.challenges ?? base.challenges,
     assignments: saved.assignments ?? [],
     teams: mergeTeams(base.teams, saved.teams),
@@ -92,6 +101,43 @@ function load() {
     observations: saved.observations ?? [],
     hints: saved.hints ?? [],
   };
+}
+
+// The weeks follow the same rule, and it matters more here than anywhere else: the week
+// texts are the product.
+//
+// A plain `saved ?? seed` froze them at the first boot. The server writes its whole state
+// to disk on start, so from the second boot onwards the saved copy was never empty and the
+// seed was ignored for good — a corrected week text could be committed, deployed, and
+// verified green while the running site still served the old wording, with nothing anywhere
+// saying why.
+//
+// So: `status` belongs to the panel, because opening and closing weeks is the admin's job
+// and no release should reach in and change it. Everything else comes from the seed unless
+// this week's text was edited in the panel, in which case that field stays edited — the
+// same bargain the roster and the axes already make.
+const WEEK_OPERATIONAL = ['status'];
+
+function mergeWeeks(seedWeeks = [], savedWeeks) {
+  if (!Array.isArray(savedWeeks) || savedWeeks.length === 0) return seedWeeks;
+
+  const merged = seedWeeks.map((seedWeek) => {
+    const saved = savedWeeks.find((w) => w.id === seedWeek.id);
+    if (!saved) return seedWeek;
+
+    const week = { ...seedWeek };
+    for (const key of WEEK_OPERATIONAL) if (key in saved) week[key] = saved[key];
+
+    const edited = Array.isArray(saved.edited) ? saved.edited : [];
+    for (const key of edited) if (key in saved) week[key] = saved[key];
+    if (edited.length > 0) week.edited = [...edited];
+
+    return week;
+  });
+
+  // A week the seed no longer has is kept: dropping it would delete text somebody wrote.
+  for (const saved of savedWeeks) if (!merged.some((w) => w.id === saved.id)) merged.push(saved);
+  return merged;
 }
 
 // The axes follow the same rule as the roster: the seed wins where nobody has intervened,
@@ -182,12 +228,26 @@ export function updateWeek(id, patch) {
   const week = findWeek(id);
   if (!week) return null;
   return mutate(() => {
+    const edited = new Set(week.edited ?? []);
     for (const key of WEEK_FIELDS) {
-      if (key in patch) {
-        if (patch[key] === null) delete week[key];
-        else week[key] = patch[key];
+      if (!(key in patch)) continue;
+
+      if (patch[key] === null) {
+        // Clearing a field hands it back to the seed rather than pinning it empty, so a
+        // text edited by mistake can be undone without knowing what it used to say.
+        edited.delete(key);
+        const fromSeed = seedWeeks.find((w) => w.id === week.id)?.[key];
+        if (fromSeed === undefined) delete week[key];
+        else week[key] = fromSeed;
+      } else {
+        week[key] = patch[key];
+        // Status is operational and always the panel's; the rest is seed-owned until the
+        // panel touches it. See mergeWeeks.
+        if (!WEEK_OPERATIONAL.includes(key)) edited.add(key);
       }
     }
+    if (edited.size > 0) week.edited = [...edited];
+    else delete week.edited;
     return week;
   });
 }
