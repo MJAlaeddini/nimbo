@@ -16,8 +16,8 @@
 
 export const ARCH_TEXT = {
   lanes: {
-    direct: 'مسیر بلادرنگ',
-    batch: 'مسیر دسته‌ای',
+    direct: 'مسیر دوم',
+    batch: 'Batch Path',
   },
   cluster: 'کلاستر',
   legend: {
