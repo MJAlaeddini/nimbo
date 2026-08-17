@@ -12,6 +12,7 @@ import Briefing from '../components/Briefing';
 import Timeline from '../components/Timeline';
 import PhaseBoard from '../components/PhaseBoard';
 import Roadmap from '../components/Roadmap';
+import Syllabus from '../components/Syllabus';
 import WeekRhythm from '../components/WeekRhythm';
 
 // One address for the whole programme. Phase zero and the nine weeks are two tabs of the
@@ -81,6 +82,8 @@ export default function Phase0() {
       )}
 
       {tab === 'rhythm' && <WeekRhythm />}
+
+      {tab === 'syllabus' && <Syllabus />}
     </>
   );
 }
