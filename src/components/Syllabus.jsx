@@ -18,7 +18,7 @@ function TopicCard({ topic, open, onToggle }) {
 
   return (
     <article className={`syl-card ${open ? 'open' : ''}`} id={`topic-${topic.id}`}>
-      <button type="button" className="syl-head" onClick={onToggle} aria-expanded={open}>
+      <button type="button" className="syl-head" dir="ltr" onClick={onToggle} aria-expanded={open}>
         <span className="syl-n mono">{String(topic.n).padStart(2, '0')}</span>
         <span className="syl-id">
           <strong>{topic.name}</strong>
