@@ -24,20 +24,20 @@ function TopicCard({ topic, open, onToggle }) {
           <strong>{topic.name}</strong>
           <i>{topic.tag}</i>
         </span>
-        <span className="syl-count tnum">
-          {faDigits(count)} {SYLLABUS_TEXT.countLabel}
+        <span className="syl-count tnum" dir="ltr">
+          {count} {SYLLABUS_TEXT.countLabel}
         </span>
         <span className="syl-chev" aria-hidden="true">
           {open ? '−' : '+'}
         </span>
       </button>
 
-      <p className="syl-goal">
+      <p className="syl-goal" dir="ltr">
         <b>{SYLLABUS_TEXT.goalLabel}:</b> {topic.goal}
       </p>
 
       {open && (
-        <div className="syl-body">
+        <div className="syl-body" dir="ltr">
           <div className="syl-sections">
             {topic.sections.map((section) => (
               <section key={section.title}>
@@ -89,14 +89,13 @@ export default function Syllabus() {
           </div>
           <ol className="shape">
             {SESSION_SHAPE.map((step) => (
-              <li key={step.title}>
+              <li key={step.title} dir="ltr">
                 <span className="shape-time tnum">
                   {step.from}–{step.to}
-                  <i>دقیقه</i>
+                  <i>min</i>
                 </span>
                 <span className="shape-what">
                   <strong>{step.title}</strong>
-                  <i>{step.hint}</i>
                 </span>
                 {/* طول نوار، سهم آن بخش از ساعت است. پنج دقیقه‌ی «چرا» کنار پانزده دقیقه‌ی
                     «مفاهیم» می‌ایستد و نسبتشان بدون خواندن عدد معلوم می‌شود. */}
