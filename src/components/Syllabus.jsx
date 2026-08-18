@@ -175,12 +175,6 @@ export default function Syllabus() {
               <i>موضوع برای هر تیم</i>
             </div>
 
-            <ul className="pick-rules">
-              {PICK_TEXT.rules.map((rule) => (
-                <li key={rule}>{rule}</li>
-              ))}
-            </ul>
-
             <p className="pick-timing">{PICK_TEXT.timing}</p>
           </div>
         </div>

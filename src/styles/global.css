@@ -1495,10 +1495,8 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
 .pick-math span{color:var(--gold);font-size:2rem;font-weight:900;line-height:1}
 .pick-math i{color:var(--lav);font-size:.82rem;font-style:normal}
 .pick-math em{color:var(--lav-dim);font-size:1.3rem;font-style:normal;margin:0 6px}
-.pick-rules{list-style:none;display:grid;gap:11px}
-.pick-rules li{position:relative;padding-right:20px;color:var(--lav);font-size:.88rem;line-height:1.95}
-.pick-rules li::before{content:'';position:absolute;right:0;top:.82em;width:7px;height:7px;border-radius:2px;background:var(--gold)}
-.pick-timing{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);color:var(--lav-dim);font-size:.84rem}
+/* این جمله حالا پیام اصلی این بخش است، نه پاورقی‌اش — پس مثل پیام اصلی دیده می‌شود. */
+.pick-timing{margin-top:6px;padding:16px 18px;border:1px solid var(--line-strong);border-right:3px solid var(--gold);border-radius:12px;background:rgba(245,166,35,.07);color:var(--ink);font-size:.94rem;line-height:2}
 
 @media(max-width:640px){
   .syl-head{grid-template-columns:auto 1fr auto;gap:12px;padding:16px 16px 6px}
