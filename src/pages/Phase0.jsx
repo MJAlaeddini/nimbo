@@ -7,6 +7,7 @@ import { usePhaseTimeline } from '../hooks/usePhaseTimeline';
 import { PROJECT, ROADMAP_TEXT } from '../content/bootcamp';
 import { useRoadmap } from '../hooks/useRoadmap';
 import { useTab } from '../hooks/useTab';
+import { writeToken } from '../lib/api';
 import Hero from '../components/Hero';
 import Briefing from '../components/Briefing';
 import Timeline from '../components/Timeline';
@@ -21,7 +22,7 @@ export default function Phase0() {
   const { weekSlug } = useParams();
   const missions = useMemo(() => parsePhaseMarkdown(phase0Raw), []);
   const phase = usePhaseTimeline(missions, CONFIG, PREVIEW_MODE);
-  const { phases, weeks } = useRoadmap();
+  const { phases, weeks, preview } = useRoadmap();
   const [tab, pick] = useTab();
   // A link straight to a week opens on the tab that holds it.
   useEffect(() => {
@@ -30,6 +31,29 @@ export default function Phase0() {
 
   return (
     <>
+      {/* بالای همه‌ی تب‌ها می‌ماند، نه فقط روی نقشه: کسی که وارد شده ممکن است از هر تبی
+          شروع کند و باید بداند چیزی که می‌بیند با چیزی که بچه‌ها می‌بینند فرق دارد. */}
+      {preview && (
+        <div className="previewbar">
+          <div className="wrap">
+            <strong>پیش‌نمایش کادر</strong>
+            <span>
+              شما وارد شده‌اید و همه‌ی هفته‌ها و چالش‌ها را می‌بینید — حتی آن‌هایی که برای بچه‌ها هنوز قفل‌اند.
+            </span>
+            <button
+              type="button"
+              className="staff-link"
+              onClick={() => {
+                writeToken('');
+                window.location.reload();
+              }}
+            >
+              خروج از پیش‌نمایش
+            </button>
+          </div>
+        </div>
+      )}
+
       {tab === 'phase0' && (
         <>
           <Hero openCount={phase.openCount} total={phase.total} countdownLabel={phase.countdownLabel} />

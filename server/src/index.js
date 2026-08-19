@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import express from 'express';
 import { credentialsConfigured, login, ownsTeam, requireAdmin, requireRole, staffConfigured } from './auth.js';
-import { publicRoadmap } from './public.js';
+import { fullRoadmap, publicRoadmap } from './public.js';
 import { listBackups, snapshotNow, startDailyBackups } from './backup.js';
 import { SHEETS } from './sheets.js';
 import { staffBoard } from './staff.js';
@@ -45,6 +45,20 @@ app.get('/api/roadmap', (req, res) => {
   res.set('Cache-Control', 'no-store');
   res.json(
     publicRoadmap({
+      phases: store.listPhases(),
+      weeks: store.listWeeks(),
+      assignments: store.listAssignments(),
+      challenges: store.listChallenges(),
+    }),
+  );
+});
+
+// The same roadmap with nothing withheld, for signed-in staff. It sits behind the same role
+// check as the panel, so there is one set of credentials and one place to revoke them.
+app.get('/api/roadmap/full', requireRole('mentor', 'lead'), (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json(
+    fullRoadmap({
       phases: store.listPhases(),
       weeks: store.listWeeks(),
       assignments: store.listAssignments(),

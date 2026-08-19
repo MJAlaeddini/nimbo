@@ -49,3 +49,35 @@ export function publicRoadmap({ phases, weeks, assignments, challenges }) {
     weeks: weeks.map((week) => publicWeek(week, assignments, challenges, phases)),
   };
 }
+
+// The same roadmap with nothing held back, for staff who are signed in.
+//
+// It is a separate function rather than a flag on the one above on purpose. The redaction is
+// the only thing standing between a visitor and next month's content, so the code that skips
+// it should be somewhere you have to go looking for, called from exactly one route that has
+// already checked who is asking — not a boolean that a wrong default could flip.
+export function fullRoadmap({ phases, weeks, assignments, challenges }) {
+  return {
+    phases,
+    weeks: weeks.map((week) => ({
+      ...week,
+      challenges: assignments
+        .filter((a) => a.weekId === week.id)
+        .map((assignment) => {
+          const challenge = challenges.find((c) => c.id === assignment.challengeId);
+          return {
+            id: assignment.id,
+            // Staff see the text of a challenge that has not been released, but still see
+            // that it has not been released — otherwise a mentor cannot tell what the teams
+            // are looking at right now, which is the thing they actually need to know.
+            status: assignment.status === 'released' ? 'released' : 'draft',
+            released: assignment.status === 'released',
+            title: challenge?.title ?? '',
+            body: challenge?.body ?? '',
+            releasedAt: assignment.releasedAt,
+            deadline: assignment.deadline,
+          };
+        }),
+    })),
+  };
+}

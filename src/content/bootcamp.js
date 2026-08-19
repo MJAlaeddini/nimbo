@@ -298,5 +298,8 @@ export function challengeState(week) {
 
 // A week is readable when it carries content; only 'locked' weeks are sealed shut.
 export function isReadable(week) {
-  return week.status !== 'locked';
+  // «خواندنی» یعنی چیزی برای خواندن آمده، نه اینکه فلگش چه می‌گوید. هفته‌ی قفل برای یک
+  // بازدیدکننده فقط عنوان دارد، پس این false می‌شود؛ برای کادرِ وارد‌شده سرور متن را هم
+  // می‌فرستد و همان هفته باز می‌شود. تصمیمِ اینکه چه کسی محتوا بگیرد با سرور است، نه این‌جا.
+  return week.status !== 'locked' || Boolean(week.mission);
 }

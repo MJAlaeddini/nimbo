@@ -78,6 +78,8 @@ export async function download(path, fallbackName) {
 
 export const api = {
   roadmap: () => request('/api/roadmap'),
+  // The unredacted one. Needs a staff session; 401/403 when there is none.
+  roadmapFull: () => request('/api/roadmap/full', { auth: true }),
   login: (user, password) => request('/api/auth/login', { method: 'POST', body: { user, password } }),
 
   // --- mentors and the programme lead ---
