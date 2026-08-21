@@ -35,9 +35,6 @@ export const PICK_TEXT = {
   title: 'برنامه‌ی ارائه‌ها',
   body:
     'هشت سرفصل و چهار تیم: به هر تیم دو موضوع رسیده و در چهار هفته، یکشنبه‌ها و سه‌شنبه‌ها، هر هشت‌تا گرفته می‌شود.',
-  fairness:
-    'ترتیب اتفاقی نیست. تیمی که اولین ارائه را می‌دهد آخرین را هم می‌دهد، هیچ تیمی دو ارائه‌ی پشت‌سرهم ندارد، و هر تیم یک یکشنبه و یک سه‌شنبه می‌گیرد. موضوع‌ها قرعه‌کشی شد، فقط با یک قید: سنگین‌ترین سرفصل‌ها به اولین اسلات نیفتند، چون آن تیم کمترین فرصت آمادگی را دارد.',
-  teamsTitle: 'تیم‌ها',
   slotTitle: 'هشت ارائه',
 };
 
@@ -63,8 +60,9 @@ export const SCHEDULE = [
 export const MODEL_TEXT = {
   kicker: 'MENTAL MODEL',
   title: 'محکِ اینکه ارائه گرفت یا نه',
+  // یک زبان از اول تا آخر. قبلاً وسط پاراگراف از انگلیسی به فارسی می‌پرید و جمله می‌شکست.
   body:
-    'After each presentation, attendees must be able to draw the mental model of that technology’s concepts. اگر نتوانند، ارائه اطلاعات داده ولی مدل نساخته. دو نمونه:',
+    'After each presentation, attendees must be able to draw the mental model of that technology’s concepts. If they cannot, the talk delivered information but built no model. Two examples:',
 };
 
 export const TOPICS = [

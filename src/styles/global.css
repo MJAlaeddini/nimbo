@@ -1486,24 +1486,13 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
 .mm-head{fill:var(--lav-dim)}
 .mm-note{fill:var(--lav-dim);font-size:10px;font-family:inherit}
 
-/* --- انتخاب موضوع ----------------------------------------------------------- */
-
-.pick{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:28px}
-.pick-lead{color:var(--ink);font-size:1rem;line-height:2.05}
-/* حسابِ ۸÷۴=۲ خودش استدلال است، پس به‌جای جمله نوشتنش، نشانش می‌دهیم. */
-.pick-math{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:10px;margin:26px 0;padding:20px;border:1px dashed var(--line-strong);border-radius:14px}
-.pick-math span{color:var(--gold);font-size:2rem;font-weight:900;line-height:1}
-.pick-math i{color:var(--lav);font-size:.82rem;font-style:normal}
-.pick-math em{color:var(--lav-dim);font-size:1.3rem;font-style:normal;margin:0 6px}
-/* این جمله حالا پیام اصلی این بخش است، نه پاورقی‌اش — پس مثل پیام اصلی دیده می‌شود. */
-.pick-timing{margin-top:6px;padding:16px 18px;border:1px solid var(--line-strong);border-right:3px solid var(--gold);border-radius:12px;background:rgba(245,166,35,.07);color:var(--ink);font-size:.94rem;line-height:2}
-
 @media(max-width:640px){
   .syl-head{grid-template-columns:auto 1fr auto;gap:12px;padding:16px 16px 6px}
   .syl-count{display:none}
   .syl-goal,.syl-body{padding-left:16px;padding-right:16px}
   .shape li{grid-template-columns:1fr;gap:8px}
   .shape-bar{display:none}
+  .teamgrid{grid-template-columns:1fr}
 }
 
 /* --- پیش‌نمایش کادر --------------------------------------------------------- */
@@ -1531,11 +1520,39 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
 .sched-sub{margin:26px 0 14px;color:var(--ink);font-size:1rem;font-weight:700}
 .sched-sub:first-of-type{margin-top:0}
 
-.teamstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+/* --- تب تیم‌ها --------------------------------------------------------------- */
+
+/* کارت تیم حالا صفحه‌ی خودش را دارد، پس بزرگ‌تر از نوارِ قبلی است: منتور، نفرات، و نوبت
+   ارائه‌ها. رنگِ نوار بالا تنها چیزی است که چهار کارت را از هم جدا می‌کند، پس همان‌جا می‌ماند. */
+/* دو در دو، نه auto-fit: چهار تیم با auto-fit سه‌تا در ردیف اول می‌نشستند و چهارمی تنها
+   می‌ماند با یک جای خالی کنارش. */
+.teamgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
 .teamcard{padding:15px 17px;border:1px solid var(--line);border-top:3px solid var(--team-color);border-radius:14px;background:var(--panel)}
 .teamcard header{color:var(--team-color);font-size:1.02rem;font-weight:900;margin-bottom:10px;text-align:left}
 .teamcard ul{list-style:none;display:grid;gap:5px}
 .teamcard li{color:var(--lav);font-size:.83rem}
+/* ستون، تا بلوک ارائه‌ها بتواند با margin-top:auto به کف کارت بچسبد. تیمی که چهار نفر
+   دارد کارت را بلندتر می‌کند و بدون این، بلوکِ کارتِ کناری وسط هوا می‌ماند. */
+.teamcard.big{display:flex;flex-direction:column;padding:20px 22px}
+.teamcard.big header{font-size:1.35rem;margin-bottom:14px}
+
+.teamcard-mentor{display:flex;align-items:baseline;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.teamcard-mentor span{color:var(--lav-dim);font-size:.74rem}
+.teamcard-mentor b{color:var(--ink);font-size:.88rem;font-weight:700}
+
+/* اسم و نقش روی یک خط، با نقش چسبیده به لبه‌ی مقابل — «سرگروه» بدون خواندن پیدا شود. */
+.teamcard-people{gap:8px;margin-bottom:16px}
+.teamcard-people li{display:flex;align-items:baseline;justify-content:space-between;gap:10px;color:var(--ink);font-size:.92rem}
+.teamcard-people i{color:var(--gold);font-size:.7rem;font-style:normal;padding:2px 8px;border:1px solid rgba(245,166,35,.35);border-radius:999px;background:rgba(245,166,35,.08)}
+
+.teamcard-talks{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
+.teamcard-talks-title{display:block;margin-bottom:9px;color:var(--lav-dim);font-size:.74rem}
+/* بدون wrap: با wrap، اسم بلندی مثل «Prometheus & Grafana» تاریخ را به خط بعد می‌انداخت و
+   ستون تاریخ‌ها به هم می‌ریخت. حالا اسم داخل خودش می‌شکند و تاریخ سر جایش می‌ماند. */
+.teamcard-talks li{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:7px 11px;border-radius:9px;background:rgba(13,5,24,.42)}
+.teamcard-talks b{color:var(--ink);font-size:.84rem;font-weight:700;min-width:0}
+.teamcard-talks i{flex:none;color:var(--lav-dim);font-size:.74rem;font-style:normal;white-space:nowrap}
+.teamcard-none{color:var(--lav-dim);font-size:.8rem}
 
 /* هشت اسلات، به‌ترتیب. شماره و رنگ کنار هم نشان می‌دهند چه کسی کِی و چند بار می‌آید. */
 .sched{list-style:none;display:grid;gap:8px}

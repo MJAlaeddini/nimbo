@@ -164,7 +164,9 @@ export default function Syllabus() {
             <span className="sec-kicker">{MODEL_TEXT.kicker}</span>
             <h2 className="sec-title">{MODEL_TEXT.title}</h2>
           </div>
-          <p className="sec-note" style={{ marginBottom: 30 }}>
+          {/* پاراگراف انگلیسی است، پس باید dir="ltr" بگیرد. بدون آن، دونقطه‌ی آخر جمله سرِ
+              خطِ آخر می‌افتاد — «:but built no model». */}
+          <p className="sec-note" dir="ltr" style={{ marginBottom: 30 }}>
             {MODEL_TEXT.body}
           </p>
           <MentalModels />
@@ -183,20 +185,6 @@ export default function Syllabus() {
           <p className="sec-note" style={{ marginBottom: 28 }}>
             {PICK_TEXT.body}
           </p>
-
-          <h3 className="sched-sub">{PICK_TEXT.teamsTitle}</h3>
-          <div className="teamstrip">
-            {TEAMS.map((team) => (
-              <article key={team.id} className="teamcard" style={{ '--team-color': team.color }}>
-                <header dir="ltr">{team.name}</header>
-                <ul>
-                  {team.members.map((m) => (
-                    <li key={m.id}>{m.name}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </div>
 
           <h3 className="sched-sub">{PICK_TEXT.slotTitle}</h3>
           <ol className="sched">
@@ -221,8 +209,6 @@ export default function Syllabus() {
               );
             })}
           </ol>
-
-          <p className="pick-timing">{PICK_TEXT.fairness}</p>
         </div>
       </section>
     </>

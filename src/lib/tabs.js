@@ -2,7 +2,7 @@
 // can share it without threading props through the router, and it is not a route: switching
 // tabs must never change the address.
 const EVENT = 'nimbo-tab-change';
-export const TABS = ['phase0', 'roadmap', 'rhythm', 'syllabus'];
+export const TABS = ['phase0', 'roadmap', 'rhythm', 'syllabus', 'teams'];
 
 let current = 'phase0';
 
