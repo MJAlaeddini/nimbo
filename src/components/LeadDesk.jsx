@@ -6,7 +6,11 @@ import Avatar from './Avatar';
 import LearningView from './LearningView';
 import PanelTabs from './PanelTabs';
 import ThisWeek from './ThisWeek';
-import { forMember, submitted } from '../../server/src/aggregate';
+import ProgramOverview from './ProgramOverview';
+import ParticipantDetail from './ParticipantDetail';
+import NeedsAttention from './NeedsAttention';
+import WeeklyReview from './WeeklyReview';
+import { missingThisWeek, needsAttention, submitted } from '../../server/src/aggregate';
 import { BoltIcon, CheckIcon, FlagIcon, LockIcon } from './icons';
 
 // خلاصه‌ی یک تیم — عمداً بدون «نمره‌ی کل» و بدون رتبه.
@@ -349,11 +353,60 @@ function CompetencyEditor({ competencies, onUpdate, onAdd, onArchive }) {
   );
 }
 
+// اسم‌های ناظر ارشد. یک حساب مشترک، اسم‌های متغیر — هر جلسه ممکن است آدم دیگری برود.
+function PersonaManager({ personas, onAdd, onArchive }) {
+  const [name, setName] = useState('');
+
+  return (
+    <section className="staff-card">
+      <header className="staff-card-head">
+        <h3>اسم‌های ناظر ارشد</h3>
+      </header>
+      <p className="staff-note">
+        ناظری که وارد می‌شود از این فهرست انتخاب می‌کند کیست. اسم بازنشسته پاک نمی‌شود — از
+        فهرست انتخاب برداشته می‌شود ولی مشاهده‌های قبلی‌اش صاحب می‌مانند.
+      </p>
+
+      <div className="obsplan">
+        <input
+          className="axis-input"
+          value={name}
+          placeholder="اسم تازه"
+          onChange={(e) => setName(e.target.value)}
+        />
+        <button
+          type="button"
+          className="staff-primary"
+          disabled={!name.trim()}
+          onClick={() => onAdd({ name }).then(() => setName(''))}
+        >
+          اضافه کن
+        </button>
+      </div>
+
+      <ul className="obs-list">
+        {personas.map((persona) => (
+          <li key={persona.id} className={`obs-item ${persona.archived ? 'archived' : ''}`}>
+            <span>{persona.name}</span>
+            <button
+              type="button"
+              className="staff-link"
+              onClick={() => onArchive(persona.id, !persona.archived)}
+            >
+              {persona.archived ? 'برگردان' : 'بازنشسته کن'}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 // §۲۵ — ناظر ارشد در همه‌ی جلسات نیست؛ برای جلسه‌ی مشخصی assign می‌شود.
-function ObserverPlanner({ weeks, teams, observers, assignments, onAssign, onRemove }) {
+function ObserverPlanner({ weeks, teams, personas, assignments, onAssign, onRemove, preselectTeam }) {
   const [weekId, setWeekId] = useState(weeks[0]?.id ?? 1);
-  const [teamId, setTeamId] = useState(teams[0]?.id ?? '');
-  const [observer, setObserver] = useState(observers[0]?.id ?? '');
+  const [teamId, setTeamId] = useState(preselectTeam ?? teams[0]?.id ?? '');
+  const [expected, setExpected] = useState('');
 
   return (
     <section className="staff-card">
@@ -362,11 +415,12 @@ function ObserverPlanner({ weeks, teams, observers, assignments, onAssign, onRem
       </header>
       <p className="staff-note">
         مشاهده‌ی مستقل، جایی که اختلاف بین منتورها بالاست یا شواهد کم است. رأی ناظر ارشد وزن بیشتری
-        ندارد — فقط یک دیدِ سوم است.
+        ندارد — فقط یک دیدِ سوم است. اسمی که این‌جا می‌نویسی فقط برنامه است: هر ناظری که آن روز
+        رفت می‌تواند ثبت کند.
       </p>
 
-      {observers.length === 0 ? (
-        <p className="staff-note">هنوز حسابی با نقش ناظر ارشد ساخته نشده.</p>
+      {teams.length === 0 ? (
+        <p className="staff-note">هنوز تیمی تعریف نشده.</p>
       ) : (
         <div className="obsplan">
           <select value={weekId} onChange={(e) => setWeekId(Number(e.target.value))}>
@@ -383,19 +437,22 @@ function ObserverPlanner({ weeks, teams, observers, assignments, onAssign, onRem
               </option>
             ))}
           </select>
-          <select value={observer} onChange={(e) => setObserver(e.target.value)}>
-            {observers.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.name}
-              </option>
-            ))}
+          <select value={expected} onChange={(e) => setExpected(e.target.value)}>
+            <option value="">— بدون اسم مشخص —</option>
+            {personas
+              .filter((p) => !p.archived)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
           </select>
           <button
             type="button"
             className="staff-primary"
-            onClick={() => onAssign({ weekId, teamId, observer, kind: 'planned' })}
+            onClick={() => onAssign({ weekId, teamId, expected: expected || null, kind: 'planned' })}
           >
-            assign کن
+            جلسه را باز کن
           </button>
         </div>
       )}
@@ -404,8 +461,8 @@ function ObserverPlanner({ weeks, teams, observers, assignments, onAssign, onRem
         {assignments.map((a) => (
           <li key={a.id} className="obs-item">
             <span>
-              هفته‌ی {faDigits(a.weekId)} · {teams.find((t) => t.id === a.teamId)?.name ?? a.teamId} ·{' '}
-              {observers.find((o) => o.id === a.observer)?.name ?? a.observer}
+              هفته‌ی {faDigits(a.weekId)} · {teams.find((t) => t.id === a.teamId)?.name ?? a.teamId}
+              {a.expected ? ` · ${personas.find((p) => p.id === a.expected)?.name ?? ''}` : ''}
             </span>
             <button type="button" className="staff-link danger" onClick={() => onRemove(a.id)}>
               حذف
@@ -441,6 +498,16 @@ export default function LeadDesk({ board, run }) {
   );
 
   const [tab, setTab] = useState('now');
+  const [personId, setPersonId] = useState(null);
+  const [planTeam, setPlanTeam] = useState(null);
+
+  const personaName = (id) => (board.observerPersonas ?? []).find((p) => p.id === id)?.name ?? null;
+  const openPerson = (member) => {
+    setPersonId(member.id);
+    setTab('person');
+  };
+  const person = board.teams.flatMap((t) => (t.members ?? []).map((m) => ({ member: m, team: t })))
+    .find((x) => x.member.id === personId) ?? null;
 
   // The badge on "این هفته" is how many people the mentors still owe a review for the
   // active week. It is the one number on this desk that decays if nobody chases it, so it
@@ -454,11 +521,25 @@ export default function LeadDesk({ board, run }) {
     return board.teams.reduce((n, t) => n + t.members.filter((m) => !done.has(m.id)).length, 0);
   }, [board.weeks, board.teams, assessments]);
 
+  // همان چیزی که در صفحه‌ی «نیازمند توجه» شمرده می‌شود، نه یک حسابِ جدا — وگرنه عددِ
+  // روی تب با تعداد کارت‌های زیرش نمی‌خواند.
+  const queueSize = useMemo(() => {
+    const live = (board.competencies ?? []).filter((c) => !c.archived);
+    return (
+      needsAttention(assessments, board.teams, live).length +
+      missingThisWeek(assessments, board.teams, board.weeks).length
+    );
+  }, [assessments, board.teams, board.competencies, board.weeks]);
+
+  // ترتیب از روی «چه چیزی الان کار می‌خواهد» است، نه از روی ساختار داده.
   const tabs = [
     { id: 'now', label: 'این هفته', count: owed },
+    { id: 'attention', label: 'نیازمند توجه', count: queueSize },
+    { id: 'overview', label: 'نمای برنامه' },
     { id: 'learning', label: 'مشاهده‌ها' },
+    { id: 'review', label: 'مرور هفته' },
     { id: 'teams', label: 'تیم‌ها' },
-    { id: 'setup', label: 'معیارها و پشتیبان' },
+    { id: 'setup', label: 'تنظیمات' },
   ];
 
   if (!team) return <p className="staff-note">هنوز تیمی تعریف نشده.</p>;
@@ -630,8 +711,49 @@ export default function LeadDesk({ board, run }) {
        </>
       )}
 
+      {tab === 'overview' && (
+        <ProgramOverview
+          board={board}
+          onGoTeam={(id) => {
+            setPicked(id);
+            setTab('teams');
+          }}
+          onGoAttention={() => setTab('attention')}
+        />
+      )}
+
+      {tab === 'attention' && (
+        <NeedsAttention
+          board={board}
+          onOpenPerson={openPerson}
+          onAssignObserver={(teamId) => {
+            setPlanTeam(teamId);
+            setTab('setup');
+          }}
+        />
+      )}
+
+      {tab === 'person' &&
+        (person ? (
+          <ParticipantDetail
+            member={person.member}
+            team={person.team}
+            board={board}
+            personaName={personaName}
+            onBack={() => setTab('attention')}
+          />
+        ) : (
+          <p className="staff-note">این نفر پیدا نشد.</p>
+        ))}
+
+      {tab === 'review' && <WeeklyReview board={board} personaName={personaName} />}
+
       {tab === 'learning' && (
-        <LearningView board={board} weekId={board.weeks.find((w) => w.status === 'active')?.id ?? board.weeks[0]?.id ?? 1} />
+        <LearningView
+          board={board}
+          weekId={board.weeks.find((w) => w.status === 'active')?.id ?? board.weeks[0]?.id ?? 1}
+          onOpenPerson={openPerson}
+        />
       )}
 
       {tab === 'setup' && (
@@ -642,11 +764,17 @@ export default function LeadDesk({ board, run }) {
             onAdd={(body) => run(() => api.addCompetency(body))}
             onArchive={(id, archived) => run(() => api.archiveCompetency(id, archived))}
           />
+          <PersonaManager
+            personas={board.observerPersonas ?? []}
+            onAdd={(body) => run(() => api.addPersona(body))}
+            onArchive={(id, archived) => run(() => api.archivePersona(id, archived))}
+          />
           <ObserverPlanner
             weeks={board.weeks}
             teams={board.teams}
-            observers={board.mentors.filter((m) => m.mentorRole === 'senior_observer')}
+            personas={board.observerPersonas ?? []}
             assignments={board.observerAssignments ?? []}
+            preselectTeam={planTeam}
             onAssign={(body) => run(() => api.assignObserver(body))}
             onRemove={(id) => run(() => api.removeObserverAssignment(id))}
           />

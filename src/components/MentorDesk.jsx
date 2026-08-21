@@ -208,6 +208,25 @@ export default function MentorDesk({ board, run }) {
         </section>
       )}
 
+      {/* §۴۴ — یادآوری داخل اپ. پوش‌نوتیفیکیشن نداریم و ساختنش زیرساخت تازه می‌خواهد؛
+          این نوار وقتی دیده می‌شود که واقعاً کاری مانده باشد، و مستقیم اولین نفر را باز
+          می‌کند تا «یادآوری» به یک کلیک ختم شود نه به یک جست‌وجو. */}
+      {pending > 0 && tab === 'review' && !open && (
+        <div className="remind">
+          <strong>ارزیابی کوتاه جلسه آماده است</strong>
+          <span>
+            {faDigits(pending)} نفر برای ثبت مشاهده باقی مانده‌اند.
+          </span>
+          <button
+            type="button"
+            className="staff-primary"
+            onClick={() => setOpenId(members.find((m) => !isDone(m.id))?.id ?? null)}
+          >
+            شروع ارزیابی
+          </button>
+        </div>
+      )}
+
       <PanelTabs tabs={tabs} active={tab} onPick={setTab} />
 
       {tab === 'review' && (

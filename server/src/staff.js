@@ -14,27 +14,30 @@ function visibleTeams(staff) {
   if (staff.role === 'lead' || staff.role === 'admin') return store.listTeams();
   if (staff.mentorRole === 'core_mentor') return store.listTeams();
   if (staff.mentorRole === 'senior_observer') {
-    const assigned = new Set(
-      store.listObserverAssignments().filter((a) => a.observer === staff.user).map((a) => a.teamId),
-    );
-    return store.listTeams().filter((t) => assigned.has(t.id));
+    // هر جلسه‌ای که باز شده، نه فقط آن‌هایی که اسم این نفر رویشان است — چرخش دقیقه‌ی آخر
+    // نباید کسی را پشت در بگذارد.
+    const open = new Set(store.listObserverAssignments().map((a) => a.teamId));
+    return store.listTeams().filter((t) => open.has(t.id));
   }
   return store.listTeams().filter((t) => t.id === staff.teamId);
 }
 
 // ردیف‌هایی که این کاربر حق دیدنشان را دارد، با قاعده‌ی استقلال اعمال‌شده.
+//
+// کلید `raterKey` است و نه `staff.user`: حساب ناظر ارشد مشترک است، پس اگر با یوزرنیم
+// مقایسه می‌کردیم، ناظر دوم رأی ناظر اول را قبل از ثبتِ خودش می‌دید — دقیقاً همان
+// anchoring ای که این قاعده برای جلوگیری از آن است.
 function visibleAssessments(staff, rows) {
   if (staff.role === 'lead' || staff.role === 'admin') return rows;
 
+  const me = store.raterKey(staff);
+  const mine = (row) => store.raterOf(row) === me;
+
   // جفت‌هایی که خودش ثبتشان کرده — از این به بعد دیدن نظر بقیه اشکالی ندارد.
   const settled = new Set(
-    rows
-      .filter((r) => r.author === staff.user && r.status === 'submitted')
-      .map((r) => `${r.memberId}:${r.weekId}`),
+    rows.filter((r) => mine(r) && r.status === 'submitted').map((r) => `${r.memberId}:${r.weekId}`),
   );
-  return rows.filter(
-    (row) => row.author === staff.user || settled.has(`${row.memberId}:${row.weekId}`),
-  );
+  return rows.filter((row) => mine(row) || settled.has(`${row.memberId}:${row.weekId}`));
 }
 
 export function staffBoard(staff) {
@@ -47,9 +50,7 @@ export function staffBoard(staff) {
     .listAccounts()
     .map(({ id, name, role, mentorRole, teamId }) => ({ id, name, role, mentorRole, teamId }));
 
-  const assignments = store
-    .listObserverAssignments()
-    .filter((a) => wide || a.observer === staff.user);
+  const assignments = store.listObserverAssignments();
 
   return {
     me: { ...staff, name: accounts.find((a) => a.id === staff.id)?.name ?? staff.name ?? staff.user },
@@ -63,6 +64,7 @@ export function staffBoard(staff) {
     mentors: accounts.filter((a) => a.role === 'mentor'),
     assessments: visibleAssessments(staff, mine(store.listAssessments())),
     observerAssignments: assignments,
+    observerPersonas: store.listObserverPersonas(),
     observations: mine(store.listObservations()),
     hints: mine(store.listHints()),
   };

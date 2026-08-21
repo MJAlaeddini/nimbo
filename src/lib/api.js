@@ -81,6 +81,9 @@ export const api = {
   // The unredacted one. Needs a staff session; 401/403 when there is none.
   roadmapFull: () => request('/api/roadmap/full', { auth: true }),
   login: (user, password) => request('/api/auth/login', { method: 'POST', body: { user, password } }),
+  // ناظر ارشد بعد از ورود می‌گوید کیست و توکن تازه‌ای با همان اسم می‌گیرد.
+  pickPersona: (personaId) => request('/api/auth/persona', { method: 'POST', body: { personaId }, auth: true }),
+  personas: () => request('/api/staff/personas', { auth: true }),
 
   // --- mentors and the programme lead ---
   board: () => request('/api/staff/board', { auth: true }),
@@ -99,6 +102,9 @@ export const api = {
   addCompetency: (body) => request('/api/staff/competencies', { method: 'POST', body, auth: true }),
   archiveCompetency: (id, archived) =>
     request(`/api/staff/competencies/${id}`, { method: 'PATCH', body: { archived }, auth: true }),
+  addPersona: (body) => request('/api/staff/personas', { method: 'POST', body, auth: true }),
+  archivePersona: (id, archived) =>
+    request(`/api/staff/personas/${id}`, { method: 'PATCH', body: { archived }, auth: true }),
   assignObserver: (body) => request('/api/staff/observer-assignments', { method: 'POST', body, auth: true }),
   removeObserverAssignment: (id) =>
     request(`/api/staff/observer-assignments/${id}`, { method: 'DELETE', auth: true }),

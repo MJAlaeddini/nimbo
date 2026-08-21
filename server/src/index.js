@@ -1,6 +1,16 @@
 import { resolve } from 'node:path';
 import express from 'express';
-import { canAssess, credentialsConfigured, login, ownsTeam, requireAdmin, requireRole, staffConfigured } from './auth.js';
+import {
+  canAssess,
+  credentialsConfigured,
+  login,
+  needsPersona,
+  ownsTeam,
+  requireAdmin,
+  requireRole,
+  staffConfigured,
+  withPersona,
+} from './auth.js';
 import { fullRoadmap, publicRoadmap } from './public.js';
 import { listBackups, snapshotNow, startDailyBackups } from './backup.js';
 import { SHEETS } from './sheets.js';
@@ -89,6 +99,18 @@ function handleLogin(req, res) {
 }
 
 app.post('/api/auth/login', handleLogin);
+
+// ناظر ارشد بعد از ورود می‌گوید کیست، و توکن تازه‌ای با همان اسم می‌گیرد.
+//
+// اسم روی توکن می‌نشیند و نه روی هر درخواست، چون قاعده‌ی استقلال و یکتاییِ ردیف‌ها هر دو
+// باید بدانند «کی» — و اگر کلاینت هر بار می‌فرستادش، یک درخواستِ بدون آن کافی بود تا
+// ردیفِ بی‌صاحب ساخته شود.
+app.post('/api/auth/persona', requireRole('mentor'), (req, res) => {
+  if (req.staff.mentorRole !== 'senior_observer') return denied(res);
+  const persona = store.findObserverPersona(req.body?.personaId);
+  if (!persona || persona.archived) return res.status(400).json({ error: 'unknown persona' });
+  return res.json(withPersona(req.staff, persona));
+});
 app.post('/api/admin/login', handleLogin);
 
 // --- staff: mentors and the programme lead -----------------------------------
@@ -106,7 +128,7 @@ app.put('/api/staff/assessments', staffOnly, (req, res) => {
   // قبل از هر نوشتنی چک می‌شود — ۴۰۳ بعد از یک ذخیره‌ی موفق، ذخیره‌اش را پس نمی‌گیرد.
   const teamId = store.memberTeamId(req.body?.memberId);
   if (!teamId) return res.status(400).json({ error: 'unknown member' });
-  if (!canAssess(req.staff, teamId, req.body?.weekId, store.observerAssignedTo)) return denied(res);
+  if (!canAssess(req.staff, teamId, req.body?.weekId, store.sessionOpenToObserver)) return denied(res);
 
   const saved = store.saveAssessment(req.body ?? {}, req.staff);
   return saved ? res.json(saved) : res.status(400).json({ error: 'bad assessment' });
@@ -207,6 +229,19 @@ app.post('/api/staff/competencies', leadOnly, (req, res) => {
 });
 
 // --- assign کردن ناظر ارشد به یک جلسه --------------------------------------
+
+app.get('/api/staff/personas', staffOnly, (req, res) =>
+  res.json({ personas: store.listObserverPersonas().filter((p) => !p.archived) }),
+);
+
+app.post('/api/staff/personas', leadOnly, (req, res) => {
+  const persona = store.addObserverPersona(req.body ?? {});
+  return persona ? res.status(201).json(persona) : res.status(400).json({ error: 'a persona needs a name' });
+});
+
+app.patch('/api/staff/personas/:id', leadOnly, (req, res) =>
+  ok(res, store.archiveObserverPersona(req.params.id, req.body?.archived !== false)),
+);
 
 app.post('/api/staff/observer-assignments', leadOnly, (req, res) => {
   const assignment = store.addObserverAssignment(req.body ?? {});

@@ -558,8 +558,8 @@
     {
       "id": "core",
       "user": "core",
-      "name": "منتور اصلی",
-      "latin": "core mentor",
+      "name": "محمدحسین دولت‌آبادی",
+      "latin": "mohammadhossein dowlatabadi",
       "role": "mentor",
       "mentorRole": "core_mentor",
       "teamId": null
@@ -691,6 +691,12 @@
           "hint": "به reasoning دیگران کمک کرد، فضا برای مشارکت ساخت و به تصمیم بهتر تیم کمک کرد."
         }
       ]
+    }
+  ],
+  "observerPersonas": [
+    {
+      "id": "p-mahdi-teymouri",
+      "name": "مهدی تیموری"
     }
   ]
 }

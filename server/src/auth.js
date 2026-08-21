@@ -76,7 +76,7 @@ export function login(user, password) {
       ? matchesHash(password, ADMIN_PASSWORD_HASH)
       : Boolean(ADMIN_PASSWORD) && safeEqual(password, ADMIN_PASSWORD);
     if (!okAdmin) return null;
-    const adminClaims = { user: name, role: 'admin', mentorRole: null, teamId: null };
+    const adminClaims = { user: name, role: 'admin', mentorRole: null, persona: null, teamId: null };
     return { token: signToken(adminClaims), me: { ...adminClaims, name: 'ادمین' } };
   }
 
@@ -91,6 +91,9 @@ export function login(user, password) {
     // نقشِ مشاهده روی خودِ نشست می‌نشیند، تا هر ردیفی که این نفر ثبت می‌کند نقشش را از
     // حساب بگیرد و نه از body درخواست.
     mentorRole: account.mentorRole ?? null,
+    // حساب ناظر ارشد مشترک است و اسمش هر جلسه فرق می‌کند، پس نشست تا وقتی اسم انتخاب
+    // نشده ناقص است و هیچ نوشتنی از آن قبول نمی‌شود.
+    persona: null,
     teamId: account.teamId ?? null,
     id: account.id,
   };
@@ -134,7 +137,30 @@ export function ownsTeam(staff, teamId) {
 }
 
 // اجازه‌ی نوشتن روی یک جلسه‌ی مشخص (هفته × تیم). فقط این تابع ناظر ارشد را راه می‌دهد.
-export function canAssess(staff, teamId, weekId, isObserverAssigned) {
-  if (staff.mentorRole === 'senior_observer') return isObserverAssigned(staff.user, weekId, teamId);
+//
+// دو شرط برای ناظر: جلسه باید باز شده باشد، و باید گفته باشد کیست. بدون شرط دوم، ردیف
+// بی‌صاحب ثبت می‌شود و بعداً معلوم نیست کدام ناظر آن را داده.
+export function canAssess(staff, teamId, weekId, isSessionOpen) {
+  if (staff.mentorRole === 'senior_observer') {
+    return Boolean(staff.persona) && isSessionOpen(weekId, teamId);
+  }
   return ownsTeam(staff, teamId);
+}
+
+// نشستی که هنوز اسم انتخاب نکرده. فقط برای ناظر ارشد معنی دارد.
+export function needsPersona(staff) {
+  return staff.mentorRole === 'senior_observer' && !staff.persona;
+}
+
+// توکن تازه با اسمِ انتخاب‌شده. هرچیز دیگری در claims دست‌نخورده می‌ماند.
+export function withPersona(staff, persona) {
+  const claims = {
+    user: staff.user,
+    role: staff.role,
+    mentorRole: staff.mentorRole ?? null,
+    persona: persona.id,
+    teamId: staff.teamId ?? null,
+    id: staff.id,
+  };
+  return { token: signToken(claims), me: { ...claims, name: persona.name } };
 }

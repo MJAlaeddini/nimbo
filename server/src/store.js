@@ -79,6 +79,7 @@ function load() {
     teams: seed.teams ?? [],
     accounts: seed.accounts ?? [],
     competencies: seed.competencies ?? [],
+    observerPersonas: seed.observerPersonas ?? [],
     assessments: [],
     observerAssignments: [],
     observations: [],
@@ -103,6 +104,9 @@ function load() {
       return kept ? { ...account, name: kept.name ?? account.name } : account;
     }),
     competencies: mergeCompetencies(base.competencies, saved.competencies),
+    // اسم‌های ناظر از پنل اضافه می‌شوند، پس فایل ذخیره‌شده برنده است و seed فقط وقتی
+    // می‌آید که هنوز چیزی اضافه نشده باشد.
+    observerPersonas: saved.observerPersonas?.length ? saved.observerPersonas : base.observerPersonas,
     // Every row from before the V1.1 rewrite is dropped, loudly. See migrate().
     assessments: migrate(saved),
     observerAssignments: saved.observerAssignments ?? [],
@@ -571,12 +575,22 @@ export function listAssessments() {
   return state.assessments;
 }
 
+// هویت رای‌دهنده — و این همان چیزی است که `author` به‌تنهایی دیگر نیست.
+//
+// حساب ناظر ارشد مشترک است و هر جلسه ممکن است آدم دیگری با آن وارد شود، پس `author` برای
+// آن حساب همیشه 'senior' است. اگر یکتایی ردیف‌ها، قاعده‌ی استقلال و شمارش raterها به
+// `author` تکیه کنند، دو ناظرِ متفاوت یک نفر حساب می‌شوند و ردیف هم را رونویسی می‌کنند.
+//
+// پس هر جایی که «کی این را گفت» مهم است، از این دو تابع می‌خواند و نه از `author`.
+export const raterOf = (row) => row.observerId ?? row.author;
+export const raterKey = (staff) => staff.persona ?? staff.user;
+
 // کلید یک مشاهده: (نفر، هفته، منتور). دو منتور روی یک نفر در یک هفته دو ردیف می‌سازند و
 // این عمدی است — §۲۱: هیچ ردیف خامی رونویسی نمی‌شود.
-export function findAssessment(memberId, weekId, author) {
+export function findAssessment(memberId, weekId, rater) {
   return (
     state.assessments.find(
-      (a) => a.memberId === memberId && a.weekId === Number(weekId) && a.author === author,
+      (a) => a.memberId === memberId && a.weekId === Number(weekId) && raterOf(a) === rater,
     ) ?? null
   );
 }
@@ -589,7 +603,7 @@ export function saveAssessment({ memberId, weekId, ratings = {}, note = '', stat
   if (!ASSESSMENT_STATUSES.includes(status)) return null;
 
   return mutate(() => {
-    let row = findAssessment(memberId, weekId, actor.user);
+    let row = findAssessment(memberId, weekId, raterKey(actor));
     if (!row) {
       row = {
         id: randomUUID(),
@@ -598,6 +612,9 @@ export function saveAssessment({ memberId, weekId, ratings = {}, note = '', stat
         teamId: found.team.id,
         weekId: Number(weekId),
         author: actor.user,
+        // دو واقعیت جدا: از کدام حساب آمد، و چه کسی گفت خودش است. یکی‌کردنشان یعنی
+        // بعداً معلوم نباشد کدام‌یک را داریم.
+        observerId: actor.persona ?? null,
         mentorRole: actor.mentorRole,
         ratings: {},
         note: '',
@@ -610,6 +627,7 @@ export function saveAssessment({ memberId, weekId, ratings = {}, note = '', stat
 
     // نقش روی ردیف همیشه نقشِ فعلیِ حساب است، حتی روی ردیفی که قبلاً ساخته شده.
     row.mentorRole = actor.mentorRole;
+    row.observerId = actor.persona ?? null;
     for (const [competencyId, value] of Object.entries(ratings)) {
       const rating = cleanRating(value);
       // پاک‌کردن یک انتخاب هم باید ممکن باشد: null یعنی «هنوز جواب نداده‌ام».
@@ -636,6 +654,43 @@ function findMemberTeam(memberId) {
   return null;
 }
 
+// --- اسم‌های ناظر ارشد ------------------------------------------------------
+//
+// انتساب است، نه احراز هویت: هر کسی که رمز حساب مشترک را دارد می‌تواند هر اسمی از این
+// فهرست را انتخاب کند. فهرست فقط جلوی اسمِ ساختگی و تایپیِ آزاد را می‌گیرد.
+
+export function listObserverPersonas() {
+  return state.observerPersonas;
+}
+
+export function findObserverPersona(id) {
+  return state.observerPersonas.find((p) => p.id === id) ?? null;
+}
+
+export function addObserverPersona({ name } = {}) {
+  const clean = String(name ?? '').trim();
+  if (!clean) return null;
+  const already = state.observerPersonas.find((p) => p.name === clean);
+  if (already) return already;
+  return mutate(() => {
+    const persona = { id: `p-${randomUUID().slice(0, 8)}`, name: clean };
+    state.observerPersonas.push(persona);
+    return persona;
+  });
+}
+
+// بازنشسته می‌شود، پاک نمی‌شود: مشاهده‌های ثبت‌شده به این شناسه اشاره می‌کنند و حذفش
+// یعنی ردیف‌هایی که دیگر معلوم نیست کی نوشته.
+export function archiveObserverPersona(id, archived = true) {
+  const persona = findObserverPersona(id);
+  if (!persona) return null;
+  return mutate(() => {
+    if (archived) persona.archived = true;
+    else delete persona.archived;
+    return persona;
+  });
+}
+
 // --- assign کردن ناظر ارشد به یک جلسه --------------------------------------
 //
 // یک «جلسه» همان جفت (هفته، تیم) است و جای دیگری ذخیره نمی‌شود؛ ذخیره‌ی جداگانه‌اش یعنی
@@ -645,14 +700,15 @@ export function listObserverAssignments() {
   return state.observerAssignments;
 }
 
-export function addObserverAssignment({ weekId, teamId, observer, kind = 'planned' } = {}) {
+// `expected` فقط برنامه‌ریزی است: می‌گوید قرار بود کی برود. دروازه‌ی نوشتن خودِ جلسه
+// است، نه این اسم — اگر دقیقه‌ی آخر کس دیگری رفت، نباید پشت در بماند.
+export function addObserverAssignment({ weekId, teamId, expected = null, kind = 'planned' } = {}) {
   if (!findWeek(weekId) || !findTeam(teamId)) return null;
-  const account = state.accounts.find((a) => a.user === observer);
-  if (!account || account.mentorRole !== 'senior_observer') return null;
   if (kind !== 'planned' && kind !== 'targeted') return null;
+  if (expected && !findObserverPersona(expected)) return null;
 
   const already = state.observerAssignments.find(
-    (a) => a.weekId === Number(weekId) && a.teamId === teamId && a.observer === observer,
+    (a) => a.weekId === Number(weekId) && a.teamId === teamId,
   );
   if (already) return already;
 
@@ -661,7 +717,7 @@ export function addObserverAssignment({ weekId, teamId, observer, kind = 'planne
       id: randomUUID(),
       weekId: Number(weekId),
       teamId,
-      observer,
+      expected,
       kind,
       createdAt: new Date().toISOString(),
     };
@@ -676,10 +732,11 @@ export function removeObserverAssignment(id) {
   return mutate(() => state.observerAssignments.splice(index, 1)[0]);
 }
 
-// آیا این ناظر برای این جلسه assign شده؟ نوشتنِ ناظر ارشد فقط از همین در می‌گذرد.
-export function observerAssignedTo(observer, weekId, teamId) {
+// آیا این جلسه برای مشاهده باز شده؟ نوشتنِ ناظر ارشد فقط از همین در می‌گذرد — و عمداً
+// به اسمِ نفر کاری ندارد.
+export function sessionOpenToObserver(weekId, teamId) {
   return state.observerAssignments.some(
-    (a) => a.observer === observer && a.weekId === Number(weekId) && a.teamId === teamId,
+    (a) => a.weekId === Number(weekId) && a.teamId === teamId,
   );
 }
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { STAFF_TEXT } from '../content/people';
 import { LIVE, api, readToken, writeToken } from '../lib/api';
 import LeadDesk from '../components/LeadDesk';
+import PersonaPicker from '../components/PersonaPicker';
 import MentorDesk from '../components/MentorDesk';
 import { LockIcon } from '../components/icons';
 
@@ -126,6 +127,8 @@ export default function StaffPage() {
   }
 
   const wide = board.me.role === 'lead' || board.me.role === 'admin';
+  // ناظر ارشدی که هنوز نگفته کیست. سرور هم مستقل از این، نوشتنش را رد می‌کند.
+  const needsPersona = board.me.mentorRole === 'senior_observer' && !board.me.persona;
 
   return (
     <section className={`block staff ${busy ? 'busy' : ''}`}>
@@ -150,7 +153,13 @@ export default function StaffPage() {
 
         {error && <p className="adm-error">{error}</p>}
 
-        {wide ? <LeadDesk board={board} run={run} /> : <MentorDesk board={board} run={run} />}
+        {needsPersona ? (
+          <PersonaPicker onDone={load} />
+        ) : wide ? (
+          <LeadDesk board={board} run={run} />
+        ) : (
+          <MentorDesk board={board} run={run} />
+        )}
       </div>
     </section>
   );

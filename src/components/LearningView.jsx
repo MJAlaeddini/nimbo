@@ -36,7 +36,7 @@ function Cell({ point, onOpen }) {
 }
 
 // §۲۹ — هر نفر در برابر هر معیار، با median هفته‌های ثبت‌شده.
-function Heat({ teams, competencies, rows, onOpen }) {
+function Heat({ teams, competencies, rows, onOpen, onOpenPerson }) {
   return (
     <div className="heatwrap">
       <table className="heat-table">
@@ -62,7 +62,15 @@ function Heat({ teams, competencies, rows, onOpen }) {
                 const total = summaries.reduce((n, s) => n + s.observations, 0);
                 return (
                   <tr key={member.id}>
-                    <th className="heat-name">{member.name}</th>
+                    <th className="heat-name">
+                      {onOpenPerson ? (
+                        <button type="button" onClick={() => onOpenPerson({ ...member, team })}>
+                          {member.name}
+                        </button>
+                      ) : (
+                        member.name
+                      )}
+                    </th>
                     {competencies.map((c, i) => {
                       const summary = summaries[i];
                       const last = summary.byWeek[summary.byWeek.length - 1];
@@ -207,7 +215,7 @@ function Drill({ open, rows, onClose }) {
   );
 }
 
-export default function LearningView({ board, weekId }) {
+export default function LearningView({ board, weekId, onOpenPerson }) {
   const [view, setView] = useState('people');
   const [open, setOpen] = useState(null);
   const rows = board.assessments ?? [];
@@ -247,7 +255,7 @@ export default function LearningView({ board, weekId }) {
       </div>
 
       {view === 'people' && (
-        <Heat teams={teams} competencies={competencies} rows={rows} onOpen={setOpen} />
+        <Heat teams={teams} competencies={competencies} rows={rows} onOpen={setOpen} onOpenPerson={onOpenPerson} />
       )}
       {view === 'attention' && <Attention teams={teams} competencies={competencies} rows={rows} />}
 

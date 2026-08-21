@@ -165,17 +165,29 @@ export const TEAMS = [
 // نفر از چه جنسی است. یکی‌کردنشان یعنی هر نقش تازه‌ای در سیستم ارزیابی، requireRole و
 // ownsTeam را هم بشکند.
 //
-// دو حساب آخر هنوز صاحب ندارند: اسم و یوزرنیمشان placeholder است. تا وقتی
-// STAFF_PASSWORD_CORE و STAFF_PASSWORD_SENIOR ست نشده باشند، هیچ‌کدام اصلاً وارد نمی‌شوند.
+// تا وقتی STAFF_PASSWORD_CORE و STAFF_PASSWORD_SENIOR ست نشده باشند، آن دو حساب اصلاً
+// وارد نمی‌شوند. حساب senior اسم ثابت ندارد: نقشش چرخشی است و اسم را موقع ورود از
+// OBSERVER_PERSONAS انتخاب می‌کند.
 export const ACCOUNTS = [
   { id: 'saleh', user: 'saleh', name: 'صالح شجاعی', latin: 'saleh shojaei', role: 'mentor', mentorRole: 'team_mentor', teamId: 'cirrus' },
   { id: 'asgarian', user: 'asgarian', name: 'علیرضا عسگریان', latin: 'alireza asgarian', role: 'mentor', mentorRole: 'team_mentor', teamId: 'stratus' },
   { id: 'tarkashvand', user: 'tarkashvand', name: 'علیرضا ترکاشوند', latin: 'alireza tarkashvand', role: 'mentor', mentorRole: 'team_mentor', teamId: 'cumulus' },
   { id: 'amir', user: 'amir', name: 'امیر نژادملایری', latin: 'amir nejhadmalayeri', role: 'mentor', mentorRole: 'team_mentor', teamId: 'nimbus' },
-  { id: 'core', user: 'core', name: 'منتور اصلی', latin: 'core mentor', role: 'mentor', mentorRole: 'core_mentor', teamId: null },
+  { id: 'core', user: 'core', name: 'محمدحسین دولت‌آبادی', latin: 'mohammadhossein dowlatabadi', role: 'mentor', mentorRole: 'core_mentor', teamId: null },
+  // یک حساب، اسم‌های متغیر — پایین را ببین.
   { id: 'senior', user: 'senior', name: 'ناظر ارشد', latin: 'senior observer', role: 'mentor', mentorRole: 'senior_observer', teamId: null },
   { id: 'lead', user: 'lead', name: 'مسئول برنامه', latin: 'programme lead', role: 'lead', mentorRole: null, teamId: null },
 ];
+
+// اسم‌هایی که ناظر ارشد می‌تواند موقع ورود انتخاب کند.
+//
+// این نقش چرخشی است: یک حساب مشترک، و هر جلسه ممکن است آدم دیگری برود. پس اسم روی حساب
+// ثابت نیست و مسئول برنامه از پنل به این فهرست اضافه می‌کند.
+//
+// مهم: این **انتساب** است، نه احراز هویت. هر کسی که رمز حساب senior را دارد می‌تواند هر
+// اسمی از این فهرست را انتخاب کند. حساب عمداً مشترک است و این فیلد فقط می‌گوید آن نفر
+// گفت کیست — نه اینکه سیستم ثابت کرده باشد.
+export const OBSERVER_PERSONAS = [{ id: 'p-mahdi-teymouri', name: 'مهدی تیموری' }];
 
 // متن تبِ «تیم‌ها». معرفی تیم‌ها قبلاً وسط تب سرفصل‌ها بود و آن‌جا حواس را از خودِ
 // سرفصل‌ها پرت می‌کرد؛ حالا جای خودش را دارد. اسم تیم روی کارت‌های موضوع و روی برنامه‌ی
