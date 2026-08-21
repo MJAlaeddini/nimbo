@@ -109,7 +109,7 @@ export const TEAMS = [
     color: '#7fd1e8',
     mentor: 'saleh',
     members: [
-      member('m-cirrus-1', 'اشکان حافظی', 'سرگروه'),
+      member('m-cirrus-1', 'اشکان حافظی'),
       member('m-cirrus-2', 'سبحان بهزادی‌پور'),
       member('m-cirrus-3', 'پرهام کوت‌زری'),
     ],
@@ -121,7 +121,7 @@ export const TEAMS = [
     color: '#b69ad6',
     mentor: 'asgarian',
     members: [
-      member('m-stratus-1', 'علیرضا خداپناه', 'سرگروه'),
+      member('m-stratus-1', 'علیرضا خداپناه'),
       member('m-stratus-2', 'علی سبزی'),
       member('m-stratus-3', 'علی بختیاری مقدم'),
     ],
@@ -133,7 +133,7 @@ export const TEAMS = [
     color: '#f5a623',
     mentor: 'tarkashvand',
     members: [
-      member('m-cumulus-1', 'مهدی مختاری', 'سرگروه'),
+      member('m-cumulus-1', 'مهدی مختاری'),
       member('m-cumulus-2', 'سبحان ارشدی'),
       member('m-cumulus-3', 'محمدامین جنگی'),
     ],
@@ -145,7 +145,7 @@ export const TEAMS = [
     color: '#5fd39a',
     mentor: 'amir',
     members: [
-      member('m-nimbus-1', 'سیداحمد رکنی حسینی', 'سرگروه'),
+      member('m-nimbus-1', 'سیداحمد رکنی حسینی'),
       member('m-nimbus-2', 'حمید شفیع‌زاده'),
       member('m-nimbus-3', 'محمدحسین پایدار'),
       member('m-nimbus-4', 'پارسا نصیری'),

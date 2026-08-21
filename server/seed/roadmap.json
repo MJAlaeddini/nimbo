@@ -348,7 +348,7 @@
         {
           "id": "m-cirrus-1",
           "name": "اشکان حافظی",
-          "seat": "سرگروه",
+          "seat": "",
           "photo": "",
           "traits": {},
           "verdict": {
@@ -393,7 +393,7 @@
         {
           "id": "m-stratus-1",
           "name": "علیرضا خداپناه",
-          "seat": "سرگروه",
+          "seat": "",
           "photo": "",
           "traits": {},
           "verdict": {
@@ -438,7 +438,7 @@
         {
           "id": "m-cumulus-1",
           "name": "مهدی مختاری",
-          "seat": "سرگروه",
+          "seat": "",
           "photo": "",
           "traits": {},
           "verdict": {
@@ -483,7 +483,7 @@
         {
           "id": "m-nimbus-1",
           "name": "سیداحمد رکنی حسینی",
-          "seat": "سرگروه",
+          "seat": "",
           "photo": "",
           "traits": {},
           "verdict": {
