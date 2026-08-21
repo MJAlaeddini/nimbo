@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { TEAMS } from '../content/people';
 import { MODEL_TEXT, PICK_TEXT, SCHEDULE, SESSION_SHAPE, SYLLABUS_TEXT, TOPICS } from '../content/syllabus';
-import { faDigits, fmtDate, fmtWeekday } from '../lib/time';
+import { fmtDate, fmtWeekday } from '../lib/time';
 import MentalModels from './MentalModels';
+import TalkTrack from './TalkTrack';
 
 // اسم و رنگ تیم از people.js می‌آید، تا اسم تیم یک منبع داشته باشد و این صفحه با پنل
 // اختلاف پیدا نکند.
@@ -164,9 +165,7 @@ export default function Syllabus() {
             <span className="sec-kicker">{MODEL_TEXT.kicker}</span>
             <h2 className="sec-title">{MODEL_TEXT.title}</h2>
           </div>
-          {/* پاراگراف انگلیسی است، پس باید dir="ltr" بگیرد. بدون آن، دونقطه‌ی آخر جمله سرِ
-              خطِ آخر می‌افتاد — «:but built no model». */}
-          <p className="sec-note" dir="ltr" style={{ marginBottom: 30 }}>
+          <p className="sec-note" style={{ marginBottom: 30 }}>
             {MODEL_TEXT.body}
           </p>
           <MentalModels />
@@ -187,28 +186,8 @@ export default function Syllabus() {
           </p>
 
           <h3 className="sched-sub">{PICK_TEXT.slotTitle}</h3>
-          <ol className="sched">
-            {SCHEDULE.map((slot) => {
-              const team = TEAM[slot.teamId];
-              const topic = TOPICS.find((t) => t.id === slot.topicId);
-              const when = new Date(`${slot.date}T00:00:00`);
-              return (
-                <li key={slot.n} style={{ '--team-color': team.color }}>
-                  <span className="sched-n tnum">{faDigits(slot.n)}</span>
-                  <span className="sched-when">
-                    <strong>{fmtDate(when)}</strong>
-                    <i>{fmtWeekday(slot.date)}</i>
-                  </span>
-                  <span className="sched-team" dir="ltr">
-                    {team.name}
-                  </span>
-                  <span className="sched-topic" dir="ltr">
-                    {topic.name}
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
+          <p className="sched-time">{PICK_TEXT.timeNote}</p>
+          <TalkTrack />
         </div>
       </section>
     </>

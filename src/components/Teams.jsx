@@ -1,5 +1,5 @@
 import { ACCOUNTS, TEAMS, TEAMS_TEXT } from '../content/people';
-import { SCHEDULE, TOPICS } from '../content/syllabus';
+import { PICK_TEXT, SCHEDULE, TOPICS } from '../content/syllabus';
 import { fmtDate, fmtWeekday } from '../lib/time';
 
 // معرفی تیم‌ها. قبلاً وسط تب سرفصل‌ها بود و آن‌جا بین «چه چیزی ارائه می‌شود» و «کِی ارائه
@@ -67,8 +67,10 @@ export default function Teams() {
                         {talks.map((slot) => (
                           <li key={slot.n}>
                             <b dir="ltr">{TOPIC[slot.topicId]?.name ?? slot.topicId}</b>
+                            {/* ساعت این‌جا هم می‌آید: کسی که فقط تیم خودش را نگاه می‌کند
+                                نباید برای دانستن ساعت برود تب سرفصل‌ها. */}
                             <i>
-                              {fmtWeekday(slot.date)} {fmtDate(new Date(`${slot.date}T00:00:00`))}
+                              {fmtWeekday(slot.date)} {fmtDate(new Date(`${slot.date}T00:00:00`))} · {PICK_TEXT.clock}
                             </i>
                           </li>
                         ))}

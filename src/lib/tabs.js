@@ -14,6 +14,12 @@ export function setTab(tab) {
   if (!TABS.includes(tab) || tab === current) return;
   current = tab;
   window.dispatchEvent(new Event(EVENT));
+  // یک تب تازه از اولش شروع می‌شود، نه از جایی که تبِ قبلی رهایش کردی. بدون این، کسی که
+  // ته صفحه‌ی سرفصل‌ها بوده و تب عوض می‌کند، وسط صفحه‌ی بعدی سر درمی‌آورد.
+  //
+  // بدون انیمیشن: پرش نرم از ته یک صفحه‌ی بلند چند ثانیه طول می‌کشد و در آن مدت محتوایی
+  // که دیگر آن‌جا نیست از جلوی چشم رد می‌شود.
+  window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
 export function subscribeTab(listener) {
