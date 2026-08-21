@@ -1727,3 +1727,24 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
   .movers b{margin-inline-start:0}
 }
 .attn-week{color:var(--lav-dim);font-size:.72rem}
+
+/* --- انتخابگر تیم (فقط منتور اصلی می‌بیندش) --------------------------------- */
+.teampick{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.teampick-item{display:flex;align-items:baseline;gap:8px;padding:8px 14px;border:1px solid var(--line);border-radius:11px;background:rgba(13,5,24,.4);color:var(--lav);font:inherit;font-size:.86rem;cursor:pointer;transition:.16s}
+.teampick-item:hover{color:var(--ink);border-color:var(--team-color)}
+.teampick-item.on{border-color:var(--team-color);background:color-mix(in srgb, var(--team-color) 14%, transparent);color:var(--team-color);font-weight:700}
+.teampick-item i{color:var(--lav-dim);font-size:.7rem;font-style:normal}
+
+/* --- دمو -------------------------------------------------------------------- */
+/* نوار بالا همیشه دیده می‌شود: کسی که وسط کار وارد این صفحه شود نباید حتی یک لحظه فکر
+   کند دارد به داده‌ی واقعی نگاه می‌کند. */
+.demo-bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:16px;padding:13px 16px;border:1px solid var(--gold);border-radius:13px;background:rgba(245,166,35,.09)}
+.demo-tag{padding:3px 11px;border-radius:99px;background:var(--gold);color:var(--void-2,#0d0518);font-size:.7rem;font-weight:900}
+.demo-bar p{flex:1;min-width:220px;color:var(--ink);font-size:.8rem;line-height:1.85}
+.demo-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+.demo-roles{display:flex;flex-wrap:wrap;gap:7px}
+.demo-role{padding:7px 13px;border:1px solid var(--line);border-radius:10px;background:rgba(13,5,24,.45);color:var(--lav);font:inherit;font-size:.8rem;cursor:pointer;transition:.16s}
+.demo-role:hover{color:var(--ink)}
+.demo-role.on{border-color:var(--gold);background:rgba(245,166,35,.14);color:var(--gold-lit);font-weight:700}
+.demo-actions{display:flex;align-items:center;gap:12px}
+.staff-link.on{color:var(--gold)}

@@ -3,6 +3,7 @@ import { STAFF_TEXT } from '../content/people';
 import { LIVE, api, readToken, writeToken } from '../lib/api';
 import LeadDesk from '../components/LeadDesk';
 import PersonaPicker from '../components/PersonaPicker';
+import DemoPanel from '../components/DemoPanel';
 import MentorDesk from '../components/MentorDesk';
 import { LockIcon } from '../components/icons';
 
@@ -59,6 +60,9 @@ export default function StaffPage() {
   const [needsLogin, setNeedsLogin] = useState(!readToken());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // دمو پشت همین در است و نه روی یک آدرس عمومی: بچه‌ها حساب ندارند، و آدرسِ مبهم فقط
+  // به‌نظر مخفی است.
+  const [demo, setDemo] = useState(false);
 
   const load = useCallback(async () => {
     if (!LIVE) return;
@@ -138,6 +142,9 @@ export default function StaffPage() {
             <b>{board.me.name}</b>
             <i className={`staff-role role-${board.me.role}`}>{ROLE_LABEL[board.me.role] ?? board.me.role}</i>
           </span>
+          <button type="button" className={`staff-link ${demo ? 'on' : ''}`} onClick={() => setDemo(!demo)}>
+            {demo ? 'بازگشت به پنل واقعی' : 'دمو'}
+          </button>
           <button
             type="button"
             className="staff-link"
@@ -153,7 +160,9 @@ export default function StaffPage() {
 
         {error && <p className="adm-error">{error}</p>}
 
-        {needsPersona ? (
+        {demo ? (
+          <DemoPanel />
+        ) : needsPersona ? (
           <PersonaPicker onDone={load} />
         ) : wide ? (
           <LeadDesk board={board} run={run} />

@@ -41,7 +41,6 @@ function visibleAssessments(staff, rows) {
 }
 
 export function staffBoard(staff) {
-  const wide = staff.role === 'lead' || staff.role === 'admin';
   const teams = visibleTeams(staff);
   const ids = new Set(teams.map((t) => t.id));
   const mine = (rows) => rows.filter((row) => ids.has(row.teamId));
@@ -54,7 +53,6 @@ export function staffBoard(staff) {
 
   return {
     me: { ...staff, name: accounts.find((a) => a.id === staff.id)?.name ?? staff.name ?? staff.user },
-    scope: wide ? 'all' : 'team',
     competencies: store.listCompetencies(),
     // فقط شکل دوره، نه متن هفته‌ی قفل: این پنل درباره‌ی آدم‌هاست و متن هفته قاعده‌ی خودش
     // را دارد.

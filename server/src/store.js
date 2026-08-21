@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '
 import { dirname, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 // یک تعریف، در aggregate.js — که هیچ importی ندارد و کلاینت هم از همان‌جا می‌خواند.
-import { NOT_OBSERVED } from './aggregate.js';
+import { NOT_OBSERVED, cleanRating } from './aggregate.js';
 
 // One JSON file, written atomically. The whole dataset is a few dozen kilobytes and every
 // write comes from one admin pressing a button, so a database would be ceremony. Mount
@@ -563,13 +563,6 @@ export function archiveCompetency(id, archived = true) {
 
 export const ASSESSMENT_STATUSES = ['draft', 'submitted'];
 export { NOT_OBSERVED };
-
-// تنها مقادیر مجاز. هرچیز دیگری — صفر، ۵، ۲٫۵، رشته‌ی "3" — رد می‌شود به‌جای اینکه
-// خاموش گرد یا کلَمپ شود: عددی که کاربر نداده نباید وارد median شود.
-function cleanRating(value) {
-  if (value === NOT_OBSERVED) return NOT_OBSERVED;
-  return value === 1 || value === 2 || value === 3 || value === 4 ? value : undefined;
-}
 
 export function listAssessments() {
   return state.assessments;

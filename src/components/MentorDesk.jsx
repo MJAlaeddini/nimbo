@@ -110,8 +110,14 @@ function Observations({ team, weekId, observations, onAdd, onRemove }) {
 //
 // یک نفر در هر لحظه، و بعد از ثبت خودکار نفر بعدی باز می‌شود — برگشتن به فهرست بین هر
 // دو نفر، همان چیزی است که ثبتِ یک تیم چهارنفره را از دو دقیقه به یک کار می‌کند.
-export default function MentorDesk({ board, run }) {
-  const team = board.teams[0];
+export default function MentorDesk({ board, run, client = api }) {
+  // منتور تیم یک تیم می‌گیرد و منتور اصلی هر چهارتا. قبلاً این‌جا `board.teams[0]` بود و
+  // منتور اصلی — که کارش دقیقاً حاضربودن در همه‌ی جلسات است — از سیزده نفر فقط سه نفرِ
+  // تیم اول را می‌دید، بدون هیچ راهی برای عوض‌کردن.
+  const [teamId, setTeamId] = useState(() => board.teams[0]?.id ?? null);
+  const team = board.teams.find((t) => t.id === teamId) ?? board.teams[0];
+  const manyTeams = board.teams.length > 1;
+
   const [weekId, setWeekId] = useState(() => {
     const active = board.weeks.find((w) => w.status === 'active');
     return active?.id ?? board.weeks[0]?.id ?? 1;
@@ -120,14 +126,17 @@ export default function MentorDesk({ board, run }) {
   const assessments = board.assessments ?? [];
   const competencies = board.competencies ?? [];
   const hints = board.hints.filter((h) => h.teamId === team?.id);
-  const me = board.me?.user;
+  // «ردیفِ خودم» با همان هویتی که سرور می‌شناسد: حساب ناظر ارشد مشترک است، پس یوزرنیم
+  // به‌تنهایی دو ناظر را یکی نشان می‌دهد.
+  const me = board.me?.persona ?? board.me?.user;
+  const raterOf = (row) => row.observerId ?? row.author;
 
   const rowFor = (memberId) =>
-    assessments.find((a) => a.memberId === memberId && a.weekId === weekId && a.author === me) ?? null;
+    assessments.find((a) => a.memberId === memberId && a.weekId === weekId && raterOf(a) === me) ?? null;
 
   const latestFor = (memberId) =>
     assessments
-      .filter((a) => a.memberId === memberId && a.author === me && a.status === 'submitted')
+      .filter((a) => a.memberId === memberId && raterOf(a) === me && a.status === 'submitted')
       .sort((a, b) => b.weekId - a.weekId)[0] ?? null;
 
   const [tab, setTab] = useState('review');
@@ -151,6 +160,14 @@ export default function MentorDesk({ board, run }) {
     return <p className="staff-note">هنوز تیمی به شما وصل نشده. مسئول برنامه این را از پنل خودش درست می‌کند.</p>;
   }
 
+  function pickTeam(nextId) {
+    setTeamId(nextId);
+    // بدون این، نفرِ بازِ تیم قبلی روی تیم تازه می‌ماند و شمارنده هم از تیم قبلی
+    // ارث می‌برد.
+    setOpenId(null);
+    setJustDone(new Set());
+  }
+
   // نفر بعدی‌ای که هنوز ثبت نشده. اگر چیزی نمانده باشد، فرم بسته می‌شود و فهرست برمی‌گردد.
   function advance(fromId) {
     const seen = new Set(justDone).add(fromId);
@@ -164,6 +181,24 @@ export default function MentorDesk({ board, run }) {
 
   return (
     <div className="mentor" style={{ '--team-color': team.color }}>
+      {manyTeams && (
+        <nav className="teampick" aria-label="تیم">
+          {board.teams.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={`teampick-item ${t.id === team.id ? 'on' : ''}`}
+              style={{ '--team-color': t.color }}
+              aria-current={t.id === team.id ? 'true' : undefined}
+              onClick={() => pickTeam(t.id)}
+            >
+              <span dir="ltr">{t.name}</span>
+              <i className="tnum">{faDigits(t.members.length)}</i>
+            </button>
+          ))}
+        </nav>
+      )}
+
       <header className="mentor-hero">
         <span className="mentor-hero-glow" aria-hidden="true" />
         <Crest team={team} />
@@ -198,7 +233,7 @@ export default function MentorDesk({ board, run }) {
               <li key={h.id} className={h.readAt ? 'read' : ''}>
                 <p>{h.text}</p>
                 {!h.readAt && (
-                  <button type="button" className="staff-link" onClick={() => run(() => api.readHint(h.id))}>
+                  <button type="button" className="staff-link" onClick={() => run(() => client.readHint(h.id))}>
                     خواندم
                   </button>
                 )}
@@ -257,8 +292,8 @@ export default function MentorDesk({ board, run }) {
               row={rowFor(open.id)}
               isLast={remaining === 0}
               // draft بدون refetch ذخیره می‌شود؛ ثبت نهایی از مسیر run می‌رود تا برد تازه شود.
-              onDraft={(body) => api.saveAssessment(body)}
-              onSubmit={(body) => run(() => api.saveAssessment(body))}
+              onDraft={(body) => client.saveAssessment(body)}
+              onSubmit={(body) => run(() => client.saveAssessment(body))}
               onDone={() => advance(open.id)}
             />
           ) : (
@@ -312,8 +347,8 @@ export default function MentorDesk({ board, run }) {
           team={team}
           weekId={weekId}
           observations={board.observations}
-          onAdd={(body) => run(() => api.addObservation(body))}
-          onRemove={(id) => run(() => api.removeObservation(id))}
+          onAdd={(body) => run(() => client.addObservation(body))}
+          onRemove={(id) => run(() => client.removeObservation(id))}
         />
       )}
     </div>

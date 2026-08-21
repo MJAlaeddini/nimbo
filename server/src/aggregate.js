@@ -14,6 +14,16 @@ export const NOT_OBSERVED = 'NOT_OBSERVED';
 // است و شمردنِ raterها با آن، چند ناظرِ متفاوت را یک نفر حساب می‌کند.
 export const raterOf = (row) => row.observerId ?? row.author;
 
+// تنها مقادیر مجازِ یک rating. هرچیز دیگری — صفر، ۵، ۲٫۵، رشته‌ی "3" — رد می‌شود به‌جای
+// اینکه خاموش گرد یا کلَمپ شود: عددی که کاربر نداده نباید وارد median شود.
+//
+// این‌جاست و نه در store.js، چون دمو هم همین قاعده را لازم دارد و دو نسخه‌ی این تابع
+// یعنی دو تعریف از «مشاهده‌ی معتبر» که با هم در می‌روند.
+export function cleanRating(value) {
+  if (value === NOT_OBSERVED) return NOT_OBSERVED;
+  return value === 1 || value === 2 || value === 3 || value === 4 ? value : undefined;
+}
+
 // فقط ratingهای عددی. `NOT_OBSERVED` هرگز صفر یا میانگین نمی‌شود (§۲۰) — شمرده می‌شود،
 // وارد حساب نمی‌شود.
 const numeric = (values) => values.filter((v) => typeof v === 'number');

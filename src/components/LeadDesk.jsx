@@ -120,13 +120,13 @@ const SHEETS = [
 // همه‌چیزِ پنل، به شکل چیزی که در اکسل یا گوگل‌شیت باز می‌شود. سرور خودش روزی یک نسخه
 // کنار فایل داده نگه می‌دارد، ولی آن نسخه روی همین ماشین است — این دکمه‌ها برای وقتی‌اند
 // که می‌خواهی داده جایی بیرون از این سرور هم باشد.
-function Backups() {
+function Backups({ client }) {
   const [saved, setSaved] = useState([]);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.backups().then((r) => setSaved(r.backups)).catch(() => {});
+    client.backups().then((r) => setSaved(r.backups)).catch(() => {});
   }, []);
 
   const grab = async (kind, path, name) => {
@@ -180,7 +180,7 @@ function Backups() {
       <button
         type="button"
         className="staff-link"
-        onClick={() => api.makeBackup().then((r) => setSaved(r.backups)).catch(() => setError('ثبت نشد.'))}
+        onClick={() => client.makeBackup().then((r) => setSaved(r.backups)).catch(() => setError('ثبت نشد.'))}
       >
         همین حالا یک نسخه روی سرور بگیر
       </button>
@@ -474,7 +474,7 @@ function ObserverPlanner({ weeks, teams, personas, assignments, onAssign, onRemo
   );
 }
 
-export default function LeadDesk({ board, run }) {
+export default function LeadDesk({ board, run, client = api }) {
   const assessments = board.assessments ?? [];
   const competencies = board.competencies ?? [];
   const summaries = useMemo(
@@ -553,7 +553,7 @@ export default function LeadDesk({ board, run }) {
         <span className="lead-hero-glow" aria-hidden="true" />
         <div>
           <span className="lead-hero-kicker">پنل مسئول برنامه</span>
-          <h2>وضعیت چهار تیم</h2>
+          <h2>وضعیت {faDigits(board.teams.length)} تیم</h2>
         </div>
         <dl className="mentor-hero-stats">
           <div>
@@ -663,7 +663,7 @@ export default function LeadDesk({ board, run }) {
             type="button"
             className="staff-primary"
             disabled={!hint.trim()}
-            onClick={() => run(() => api.addHint({ teamId: team.id, text: hint })).then(() => setHint(''))}
+            onClick={() => run(() => client.addHint({ teamId: team.id, text: hint })).then(() => setHint(''))}
           >
             <CheckIcon size={13} />
             بفرست
@@ -676,7 +676,7 @@ export default function LeadDesk({ board, run }) {
                   <span className={h.readAt ? 'hint-read' : 'hint-unread'}>
                     {h.readAt ? 'خوانده شد' : <><LockIcon size={11} /> خوانده‌نشده</>}
                   </span>
-                  <button type="button" className="staff-link danger" onClick={() => run(() => api.removeHint(h.id))}>
+                  <button type="button" className="staff-link danger" onClick={() => run(() => client.removeHint(h.id))}>
                     حذف
                   </button>
                 </footer>
@@ -691,7 +691,7 @@ export default function LeadDesk({ board, run }) {
             <button
               type="button"
               className="staff-link"
-              onClick={() => run(() => api.addMember(team.id, { name: 'عضو تازه', seat: '' }))}
+              onClick={() => run(() => client.addMember(team.id, { name: 'عضو تازه', seat: '' }))}
             >
               + افزودن نفر
             </button>
@@ -701,8 +701,8 @@ export default function LeadDesk({ board, run }) {
               <MemberRow
                 key={member.id}
                 member={member}
-                onSave={(patch) => run(() => api.patchMember(member.id, patch))}
-                onRemove={() => run(() => api.removeMember(member.id))}
+                onSave={(patch) => run(() => client.patchMember(member.id, patch))}
+                onRemove={() => run(() => client.removeMember(member.id))}
               />
             ))}
           </div>
@@ -760,14 +760,14 @@ export default function LeadDesk({ board, run }) {
         <>
           <CompetencyEditor
             competencies={competencies}
-            onUpdate={(id, patch) => run(() => api.updateCompetency(id, patch))}
-            onAdd={(body) => run(() => api.addCompetency(body))}
-            onArchive={(id, archived) => run(() => api.archiveCompetency(id, archived))}
+            onUpdate={(id, patch) => run(() => client.updateCompetency(id, patch))}
+            onAdd={(body) => run(() => client.addCompetency(body))}
+            onArchive={(id, archived) => run(() => client.archiveCompetency(id, archived))}
           />
           <PersonaManager
             personas={board.observerPersonas ?? []}
-            onAdd={(body) => run(() => api.addPersona(body))}
-            onArchive={(id, archived) => run(() => api.archivePersona(id, archived))}
+            onAdd={(body) => run(() => client.addPersona(body))}
+            onArchive={(id, archived) => run(() => client.archivePersona(id, archived))}
           />
           <ObserverPlanner
             weeks={board.weeks}
@@ -775,10 +775,10 @@ export default function LeadDesk({ board, run }) {
             personas={board.observerPersonas ?? []}
             assignments={board.observerAssignments ?? []}
             preselectTeam={planTeam}
-            onAssign={(body) => run(() => api.assignObserver(body))}
-            onRemove={(id) => run(() => api.removeObserverAssignment(id))}
+            onAssign={(body) => run(() => client.assignObserver(body))}
+            onRemove={(id) => run(() => client.removeObserverAssignment(id))}
           />
-          <Backups />
+          <Backups client={client} />
         </>
       )}
     </div>
