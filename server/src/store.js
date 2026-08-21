@@ -47,7 +47,14 @@ function mergeTeams(seedTeams, savedTeams) {
     const known = new Set(members.map((m) => m.id));
     for (const seedMember of seedTeam.members ?? []) if (!known.has(seedMember.id)) members.push(seedMember);
 
-    return { ...seedTeam, ...savedTeam, members };
+    // هویت تیم (اسم و رنگ) از seed می‌آید مگر پنل عوضش کرده باشد. بدون این، `savedTeam`
+    // روی `seedTeam` می‌ریخت و اسمِ ذخیره‌شده همیشه برنده بود — یعنی تغییر نام یک تیم در
+    // یک ریلیز هرگز به سرورِ در حال اجرا نمی‌رسید، همان تله‌ای که برای محورها و هفته‌ها
+    // هم بود. بقیه‌ی چیزهای ذخیره‌شده مثل قبل نگه داشته می‌شوند.
+    const identity = savedTeam.renamed
+      ? { name: savedTeam.name, latin: savedTeam.latin, color: savedTeam.color, renamed: true }
+      : { name: seedTeam.name, latin: seedTeam.latin, color: seedTeam.color };
+    return { ...seedTeam, ...savedTeam, ...identity, members };
   });
 
   for (const savedTeam of savedTeams) if (!merged.some((t) => t.id === savedTeam.id)) merged.push(savedTeam);
@@ -372,6 +379,8 @@ export function updateTeam(id, patch) {
   if (!team) return null;
   return mutate(() => {
     for (const key of ['name', 'latin', 'color']) if (key in patch) team[key] = patch[key];
+    // از این به بعد اسم این تیم مال پنل است و ریلیزها رویش نمی‌نویسند. رجوع به mergeTeams.
+    team.renamed = true;
     return team;
   });
 }

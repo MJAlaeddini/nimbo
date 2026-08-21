@@ -1,7 +1,13 @@
 import { useState } from 'react';
-import { MODEL_TEXT, PICK_TEXT, SESSION_SHAPE, SYLLABUS_TEXT, TOPICS } from '../content/syllabus';
-import { faDigits } from '../lib/time';
+import { TEAMS } from '../content/people';
+import { MODEL_TEXT, PICK_TEXT, SCHEDULE, SESSION_SHAPE, SYLLABUS_TEXT, TOPICS } from '../content/syllabus';
+import { faDigits, fmtDate, fmtWeekday } from '../lib/time';
 import MentalModels from './MentalModels';
+
+// اسم و رنگ تیم از people.js می‌آید، تا اسم تیم یک منبع داشته باشد و این صفحه با پنل
+// اختلاف پیدا نکند.
+const TEAM = Object.fromEntries(TEAMS.map((t) => [t.id, t]));
+const SLOT_OF = Object.fromEntries(SCHEDULE.map((s) => [s.topicId, s]));
 
 // The eight talks, their syllabus, and how the topics get shared out.
 //
@@ -15,6 +21,8 @@ import MentalModels from './MentalModels';
 
 function TopicCard({ topic, open, onToggle }) {
   const count = topic.sections.reduce((n, s) => n + s.items.length, 0);
+  const slot = SLOT_OF[topic.id];
+  const team = slot && TEAM[slot.teamId];
 
   return (
     <article className={`syl-card ${open ? 'open' : ''}`} id={`topic-${topic.id}`}>
@@ -31,6 +39,18 @@ function TopicCard({ topic, open, onToggle }) {
           {open ? '−' : '+'}
         </span>
       </button>
+
+      {/* کیست و کِی — روی خودِ کارت، تا از شبکه‌ی هشت‌تایی بدون بازکردن معلوم باشد. */}
+      {team && (
+        <div className="syl-owner" style={{ '--team-color': team.color }}>
+          <span className="syl-owner-team" dir="ltr">
+            {team.name}
+          </span>
+          <span className="syl-owner-when">
+            {fmtWeekday(slot.date)} {fmtDate(new Date(`${slot.date}T00:00:00`))}
+          </span>
+        </div>
+      )}
 
       <p className="syl-goal" dir="ltr">
         <b>{SYLLABUS_TEXT.goalLabel}:</b> {topic.goal}
@@ -160,23 +180,49 @@ export default function Syllabus() {
             <h2 className="sec-title">{PICK_TEXT.title}</h2>
           </div>
 
-          <div className="pick">
-            <p className="pick-lead">{PICK_TEXT.body}</p>
+          <p className="sec-note" style={{ marginBottom: 28 }}>
+            {PICK_TEXT.body}
+          </p>
 
-            {/* حساب ساده‌ای که خودش را نشان می‌دهد: هشت سرفصل، چهار تیم، دوتا هرکدام. */}
-            <div className="pick-math" aria-hidden="true">
-              <span className="tnum">{faDigits(TOPICS.length)}</span>
-              <i>سرفصل</i>
-              <em>÷</em>
-              <span className="tnum">{faDigits(4)}</span>
-              <i>تیم</i>
-              <em>=</em>
-              <span className="tnum">{faDigits(2)}</span>
-              <i>موضوع برای هر تیم</i>
-            </div>
-
-            <p className="pick-timing">{PICK_TEXT.timing}</p>
+          <h3 className="sched-sub">{PICK_TEXT.teamsTitle}</h3>
+          <div className="teamstrip">
+            {TEAMS.map((team) => (
+              <article key={team.id} className="teamcard" style={{ '--team-color': team.color }}>
+                <header dir="ltr">{team.name}</header>
+                <ul>
+                  {team.members.map((m) => (
+                    <li key={m.id}>{m.name}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
           </div>
+
+          <h3 className="sched-sub">{PICK_TEXT.slotTitle}</h3>
+          <ol className="sched">
+            {SCHEDULE.map((slot) => {
+              const team = TEAM[slot.teamId];
+              const topic = TOPICS.find((t) => t.id === slot.topicId);
+              const when = new Date(`${slot.date}T00:00:00`);
+              return (
+                <li key={slot.n} style={{ '--team-color': team.color }}>
+                  <span className="sched-n tnum">{faDigits(slot.n)}</span>
+                  <span className="sched-when">
+                    <strong>{fmtDate(when)}</strong>
+                    <i>{fmtWeekday(slot.date)}</i>
+                  </span>
+                  <span className="sched-team" dir="ltr">
+                    {team.name}
+                  </span>
+                  <span className="sched-topic" dir="ltr">
+                    {topic.name}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+
+          <p className="pick-timing">{PICK_TEXT.fairness}</p>
         </div>
       </section>
     </>

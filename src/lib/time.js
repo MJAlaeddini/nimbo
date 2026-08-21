@@ -18,6 +18,12 @@ export function fmtDate(d) {
   return d.toLocaleDateString('fa-IR', { month: 'long', day: 'numeric' });
 }
 
+// روز هفته، از روی یک تاریخ ISO. جدا از fmtDate است تا صفحه بتواند روز و تاریخ را در دو
+// جای مختلف بگذارد؛ تقویم هر دو جلالی است چون locale همان fa-IR است.
+export function fmtWeekday(iso) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('fa-IR', { weekday: 'long' });
+}
+
 export function formatCountdown(diffMs) {
   const dd = Math.floor(diffMs / 864e5);
   const hh = Math.floor((diffMs % 864e5) / 36e5);

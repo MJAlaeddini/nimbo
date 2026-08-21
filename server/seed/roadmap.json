@@ -340,8 +340,8 @@
   "teams": [
     {
       "id": "cirrus",
-      "name": "سیروس",
-      "latin": "Cirrus",
+      "name": "Teambo",
+      "latin": "Teambo",
       "color": "#7fd1e8",
       "mentor": "saleh",
       "members": [
@@ -385,8 +385,8 @@
     },
     {
       "id": "stratus",
-      "name": "استراتوس",
-      "latin": "Stratus",
+      "name": "AAA",
+      "latin": "AAA",
       "color": "#b69ad6",
       "mentor": "asgarian",
       "members": [
@@ -430,8 +430,8 @@
     },
     {
       "id": "cumulus",
-      "name": "کومولوس",
-      "latin": "Cumulus",
+      "name": "Nimbyte",
+      "latin": "Nimbyte",
       "color": "#f5a623",
       "mentor": "tarkashvand",
       "members": [
@@ -475,8 +475,8 @@
     },
     {
       "id": "nimbus",
-      "name": "نیمبوس",
-      "latin": "Nimbus",
+      "name": "TMNT",
+      "latin": "TMNT",
       "color": "#5fd39a",
       "mentor": "amir",
       "members": [

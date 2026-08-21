@@ -98,12 +98,14 @@ const member = (id, name, seat = '') => ({
   verdict: { call: 'none', note: '', updatedAt: null },
 });
 
-// اسم تیم‌ها از انواع ابر است — هم‌خانواده‌ی خود Nimbo.
+// تیم‌ها اسم خودشان را انتخاب کرده‌اند و همان اسم همه‌جای سایت دیده می‌شود. شناسه‌ها ولی
+// همان اسم‌های ابری اول کار مانده‌اند و عمداً دست نمی‌خورند: ارزیابی‌ها، مشاهده‌ها، راهنمایی‌ها
+// و اتصال منتور به تیم، همه با `teamId` کار می‌کنند و عوض‌کردنش یعنی یتیم‌شدن آن داده.
 export const TEAMS = [
   {
     id: 'cirrus',
-    name: 'سیروس',
-    latin: 'Cirrus',
+    name: 'Teambo',
+    latin: 'Teambo',
     color: '#7fd1e8',
     mentor: 'saleh',
     members: [
@@ -114,8 +116,8 @@ export const TEAMS = [
   },
   {
     id: 'stratus',
-    name: 'استراتوس',
-    latin: 'Stratus',
+    name: 'AAA',
+    latin: 'AAA',
     color: '#b69ad6',
     mentor: 'asgarian',
     members: [
@@ -126,8 +128,8 @@ export const TEAMS = [
   },
   {
     id: 'cumulus',
-    name: 'کومولوس',
-    latin: 'Cumulus',
+    name: 'Nimbyte',
+    latin: 'Nimbyte',
     color: '#f5a623',
     mentor: 'tarkashvand',
     members: [
@@ -138,8 +140,8 @@ export const TEAMS = [
   },
   {
     id: 'nimbus',
-    name: 'نیمبوس',
-    latin: 'Nimbus',
+    name: 'TMNT',
+    latin: 'TMNT',
     color: '#5fd39a',
     mentor: 'amir',
     members: [

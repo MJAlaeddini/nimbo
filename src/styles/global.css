@@ -1520,3 +1520,35 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
 .fstaff:hover{color:var(--gold)}
 /* نشان قفل روی محتوایی که کادر می‌بیند ولی هنوز برای بچه‌ها باز نشده. */
 .ph-locked-badge.preview{display:inline-flex;align-items:center;gap:6px;margin-bottom:12px;padding:4px 11px;border:1px solid var(--gold);border-radius:999px;background:rgba(245,166,35,.12);color:var(--gold);font-size:.72rem}
+
+/* --- برنامه‌ی ارائه‌ها ------------------------------------------------------- */
+
+/* نشان مالکِ موضوع، روی خود کارت: بدون بازکردن معلوم باشد مال کیست و کِی است. */
+.syl-owner{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin:0 22px 12px;padding:7px 12px;border-right:3px solid var(--team-color);border-radius:10px;background:color-mix(in srgb, var(--team-color) 12%, transparent)}
+.syl-owner-team{color:var(--team-color);font-size:.86rem;font-weight:700}
+.syl-owner-when{color:var(--lav);font-size:.78rem}
+
+.sched-sub{margin:26px 0 14px;color:var(--ink);font-size:1rem;font-weight:700}
+.sched-sub:first-of-type{margin-top:0}
+
+.teamstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+.teamcard{padding:15px 17px;border:1px solid var(--line);border-top:3px solid var(--team-color);border-radius:14px;background:var(--panel)}
+.teamcard header{color:var(--team-color);font-size:1.02rem;font-weight:900;margin-bottom:10px;text-align:left}
+.teamcard ul{list-style:none;display:grid;gap:5px}
+.teamcard li{color:var(--lav);font-size:.83rem}
+
+/* هشت اسلات، به‌ترتیب. شماره و رنگ کنار هم نشان می‌دهند چه کسی کِی و چند بار می‌آید. */
+.sched{list-style:none;display:grid;gap:8px}
+.sched li{display:grid;grid-template-columns:auto 120px auto 1fr;align-items:center;gap:16px;padding:12px 16px;border:1px solid var(--line);border-right:3px solid var(--team-color);border-radius:12px;background:var(--panel)}
+.sched-n{width:26px;height:26px;display:grid;place-items:center;border-radius:8px;background:rgba(13,5,24,.5);color:var(--lav-dim);font-size:.76rem}
+.sched-when{display:flex;flex-direction:column}
+.sched-when strong{color:var(--ink);font-size:.9rem}
+.sched-when i{color:var(--lav-dim);font-size:.72rem;font-style:normal}
+.sched-team{color:var(--team-color);font-size:.88rem;font-weight:700;white-space:nowrap}
+.sched-topic{color:var(--lav);font-size:.86rem;text-align:left}
+
+@media(max-width:640px){
+  .sched li{grid-template-columns:auto 1fr;gap:8px 12px}
+  .sched-team,.sched-topic{grid-column:2;text-align:right}
+  .sched-topic{direction:ltr;text-align:left}
+}
