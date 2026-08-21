@@ -7,26 +7,24 @@ import { toCsv } from './backup.js';
 const nameOf = (accounts, user) => accounts.find((a) => a.user === user || a.id === user)?.name ?? user ?? '';
 const VERDICT = { stay: 'می‌ماند', watch: 'زیر نظر', part: 'جدا می‌شود', none: '' };
 
-export function peopleSheet({ teams, accounts, axes }) {
-  const headers = [
-    'شناسه', 'نام', 'تیم', 'منتور', 'نقش در تیم',
-    ...axes.traits.map((a) => a.label),
-    'میانگین', 'تصمیم', 'یادداشت تصمیم',
-  ];
+const MENTOR_ROLE = {
+  team_mentor: 'منتور تیم',
+  core_mentor: 'منتور اصلی',
+  senior_observer: 'ناظر ارشد',
+};
+
+export function peopleSheet({ teams, accounts }) {
+  const headers = ['شناسه', 'نام', 'تیم', 'منتور', 'نقش در تیم', 'تصمیم', 'یادداشت تصمیم'];
   const rows = [];
   for (const team of teams) {
     const mentor = accounts.find((a) => a.id === team.mentor);
     for (const member of team.members) {
-      const scores = axes.traits.map((a) => member.traits?.[a.id] ?? '');
-      const given = scores.filter((n) => typeof n === 'number' && n > 0);
       rows.push([
         member.id,
         member.name,
         team.name,
         mentor?.name ?? '',
         member.seat ?? '',
-        ...scores,
-        given.length > 0 ? (given.reduce((x, y) => x + y, 0) / given.length).toFixed(1) : '',
         VERDICT[member.verdict?.call ?? 'none'] ?? '',
         member.verdict?.note ?? '',
       ]);
@@ -35,23 +33,40 @@ export function peopleSheet({ teams, accounts, axes }) {
   return toCsv(headers, rows);
 }
 
-export function assessmentsSheet({ teams, accounts, axes, assessments }) {
-  const headers = ['تیم', 'هفته', ...axes.metrics.map((a) => a.label), 'میانگین', 'یادداشت', 'ثبت‌کننده', 'آخرین تغییر'];
+// ردیف‌های خام، یکی به‌ازای هر (نفر، هفته، منتور) — نه میانگین.
+//
+// این چیزی است که سیستم قبلی اصلاً export نداشت: فقط یک اسنپ‌شات صاف از هر نفر بیرون
+// می‌داد که هم بُعد هفته را پاک کرده بود و هم بُعد منتور را. کلِ ارزش این داده در همان دو
+// بُعد است، پس هر ردیف کامل بیرون می‌آید و هر aggregate ای در صفحه‌ی گسترده ساخته می‌شود.
+export function assessmentsSheet({ teams, accounts, competencies, assessments }) {
+  const headers = [
+    'هفته', 'تیم', 'نفر', 'شناسه‌ی نفر', 'منتور', 'نقش منتور',
+    ...competencies.map((c) => c.label),
+    'یادداشت', 'وضعیت', 'زمان ثبت',
+  ];
+  const memberName = (memberId) =>
+    teams.flatMap((t) => t.members ?? []).find((m) => m.id === memberId)?.name ?? memberId;
+
   const rows = [...assessments]
-    .sort((a, b) => a.teamId.localeCompare(b.teamId) || a.weekId - b.weekId)
-    .map((row) => {
-      const scores = axes.metrics.map((a) => row.scores?.[a.id] ?? '');
-      const given = scores.filter((n) => typeof n === 'number' && n > 0);
-      return [
-        teams.find((t) => t.id === row.teamId)?.name ?? row.teamId,
-        row.weekId,
-        ...scores,
-        given.length > 0 ? (given.reduce((x, y) => x + y, 0) / given.length).toFixed(1) : '',
-        row.note ?? '',
-        nameOf(accounts, row.author),
-        (row.updatedAt ?? row.createdAt ?? '').slice(0, 10),
-      ];
-    });
+    .sort((a, b) => a.weekId - b.weekId || String(a.teamId).localeCompare(String(b.teamId)))
+    .map((row) => [
+      row.weekId,
+      teams.find((t) => t.id === row.teamId)?.name ?? row.teamId,
+      memberName(row.memberId),
+      row.memberId,
+      nameOf(accounts, row.author),
+      MENTOR_ROLE[row.mentorRole] ?? row.mentorRole ?? '',
+      // «مشاهده نکردم» عدد نمی‌شود، حتی در خروجی — وگرنه کسی در Excel رویش میانگین
+      // می‌گیرد و عددی می‌سازد که هیچ منتوری نداده.
+      ...competencies.map((c) => {
+        const rating = row.ratings?.[c.id];
+        if (rating === undefined) return '';
+        return rating === 'NOT_OBSERVED' ? 'مشاهده نشد' : rating;
+      }),
+      row.note ?? '',
+      row.status === 'submitted' ? 'ثبت شد' : 'پیش‌نویس',
+      (row.submittedAt ?? '').slice(0, 16).replace('T', ' '),
+    ]);
   return toCsv(headers, rows);
 }
 

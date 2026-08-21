@@ -2,7 +2,7 @@
 // Run from the repo root: node server/scripts/build-seed.mjs
 import { writeFileSync } from 'node:fs';
 import { PHASES, weeks } from '../../src/content/bootcamp.js';
-import { ACCOUNTS, METRIC_AXES, TEAMS, TRAIT_AXES } from '../../src/content/people.js';
+import { ACCOUNTS, COMPETENCIES, TEAMS } from '../../src/content/people.js';
 
 // Each challenge opens on a sentence from someone who earned the right to say it. The
 // sentence stays in the language it was written in — a line prefixed with `> ` is the quote,
@@ -102,7 +102,7 @@ const seed = {
   // sign in, the environment says with what.
   teams: TEAMS,
   accounts: ACCOUNTS,
-  axes: { traits: TRAIT_AXES, metrics: METRIC_AXES },
+  competencies: COMPETENCIES,
 };
 
 const out = new URL('../seed/roadmap.json', import.meta.url);

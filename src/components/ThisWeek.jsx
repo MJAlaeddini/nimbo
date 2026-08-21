@@ -10,7 +10,7 @@ import { FlagIcon } from './icons';
 // who still has no decision recorded. Those are the three things that go stale if nobody
 // looks, and they were previously spread across three scroll positions.
 
-export default function ThisWeek({ teams, weeks, evaluations, mentors, onGoTeam, onGoLearning }) {
+export default function ThisWeek({ teams, weeks, assessments, mentors, onGoTeam, onGoLearning }) {
   const active = weeks.filter((w) => w.status === 'active');
   const week = active[0] ?? null;
 
@@ -20,16 +20,18 @@ export default function ThisWeek({ teams, weeks, evaluations, mentors, onGoTeam,
     if (!week) return [];
     return teams.map((team) => {
       const done = new Set(
-        evaluations.filter((e) => e.weekId === week.id && e.teamId === team.id).map((e) => e.memberId),
+        assessments.filter((a) => a.weekId === week.id && a.teamId === team.id).map((a) => a.memberId),
       );
       const missing = team.members.filter((m) => !done.has(m.id));
       return { team, done: done.size, total: team.members.length, missing };
     });
-  }, [teams, week, evaluations]);
+  }, [teams, week, assessments]);
 
-  const gaps = useMemo(
-    () => (week ? evaluations.filter((e) => e.weekId === week.id && e.gap) : []),
-    [evaluations, week],
+  // یادداشت‌های اختیاریِ همین هفته. فیلدِ «چه چیزی جا نیفتاد» با مدل قبلی رفت — سند فرم
+  // را چهار سؤال و یک یادداشت اختیاری تعریف می‌کند و همین یادداشت جایش را می‌گیرد.
+  const notes = useMemo(
+    () => (week ? assessments.filter((a) => a.weekId === week.id && a.note) : []),
+    [assessments, week],
   );
 
   const undecided = useMemo(
@@ -92,30 +94,31 @@ export default function ThisWeek({ teams, weeks, evaluations, mentors, onGoTeam,
         <header className="staff-card-head">
           <h3>
             <FlagIcon size={15} />
-            آنچه این هفته جا نیفتاد
+            نکته‌های ثبت‌شده‌ی این هفته
           </h3>
-          {gaps.length > 0 && (
+          {notes.length > 0 && (
             <button type="button" className="staff-link" onClick={onGoLearning}>
-              همه‌ی هفته‌ها
+              همه‌ی مشاهده‌ها
             </button>
           )}
         </header>
-        {gaps.length === 0 ? (
+        {notes.length === 0 ? (
           <p className="staff-note">
-            هنوز شکافی برای این هفته ثبت نشده — یا همه‌چیز جا افتاده، یا هنوز ارزیابی‌ها کامل نیست.
+            هنوز نکته‌ای برای این هفته نوشته نشده. یادداشت اختیاری است، پس نبودنش لزوماً یعنی چیزی
+            برای گفتن نبوده.
           </p>
         ) : (
           <ul className="gap-list">
-            {gaps.slice(0, 6).map((g) => {
-              const team = teams.find((t) => t.id === g.teamId);
-              const person = team?.members.find((m) => m.id === g.memberId);
+            {notes.slice(0, 6).map((row) => {
+              const team = teams.find((t) => t.id === row.teamId);
+              const person = team?.members.find((m) => m.id === row.memberId);
               return (
-                <li key={g.id}>
+                <li key={row.id}>
                   <header>
-                    <strong>{person?.name ?? g.memberId}</strong>
+                    <strong>{person?.name ?? row.memberId}</strong>
                     <span className="gap-team">{team?.name}</span>
                   </header>
-                  <p>{g.gap}</p>
+                  <p>{row.note}</p>
                 </li>
               );
             })}

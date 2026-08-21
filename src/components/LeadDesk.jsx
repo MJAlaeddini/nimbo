@@ -5,84 +5,23 @@ import { faDigits } from '../lib/time';
 import Avatar from './Avatar';
 import LearningView from './LearningView';
 import PanelTabs from './PanelTabs';
-import PowerChart from './PowerChart';
-import ScoreBar from './ScoreBar';
 import ThisWeek from './ThisWeek';
+import { forMember, submitted } from '../../server/src/aggregate';
 import { BoltIcon, CheckIcon, FlagIcon, LockIcon } from './icons';
 
-const mean = (numbers) => (numbers.length > 0 ? numbers.reduce((a, b) => a + b, 0) / numbers.length : null);
-
-// میانگین هر تیم، محور به محور و در کل — همان چیزی که جدول را مرتب می‌کند.
+// خلاصه‌ی یک تیم — عمداً بدون «نمره‌ی کل» و بدون رتبه.
 //
-// از ارزیابی‌های افراد حساب می‌شود، نه از یک امتیاز تیمیِ جداگانه. تا وقتی این تابع از
-// assessments می‌خواند، جدول لیگ و کارت امتیاز هر دو «—» می‌ماندند: آن فرم دیگر پر
-// نمی‌شود و هیچ‌جای پنل نمی‌گفت چرا عددها خالی‌اند.
-function summarise(team, evaluations, axes) {
-  const rows = evaluations.filter((e) => e.teamId === team.id);
-  const perAxis = {};
-  for (const axis of axes) {
-    perAxis[axis.id] = mean(rows.map((r) => r.scores?.[axis.id]).filter((n) => typeof n === 'number'));
-  }
-  const all = rows.flatMap((r) => Object.values(r.scores ?? {})).filter((n) => typeof n === 'number');
-
-  // یک نقطه به‌ازای هر هفته: میانگین همه‌ی افرادِ ارزیابی‌شده‌ی تیم در آن هفته.
-  const weekIds = [...new Set(rows.map((r) => r.weekId))].sort((a, b) => a - b);
-  const byWeek = weekIds
-    .map((weekId) => ({
-      weekId,
-      value: mean(
-        rows
-          .filter((r) => r.weekId === weekId)
-          .flatMap((r) => Object.values(r.scores ?? {}))
-          .filter((n) => typeof n === 'number'),
-      ),
-    }))
-    .filter((p) => p.value !== null);
-
-  return { rows, perAxis, overall: mean(all), byWeek, weeksScored: weekIds.length };
+// قبلاً این تابع به هر تیم یک عدد می‌داد و جدول لیگ با آن مرتب می‌شد. سند هر دو را ممنوع
+// کرده و دلیلش هم روشن است: یک عدد به‌ازای هر تیم، مشاهده‌ها را به چیزی تبدیل می‌کند که
+// نیستند. چیزی که این‌جا می‌ماند فقط پوشش است — چند نفر مشاهده شده‌اند و چند هفته.
+function summarise(team, rows) {
+  const mine = submitted(rows).filter((r) => r.teamId === team.id);
+  const weeks = new Set(mine.map((r) => r.weekId));
+  const people = new Set(mine.map((r) => r.memberId));
+  return { rows: mine, weeks: weeks.size, people: people.size, notes: mine.filter((r) => r.note) };
 }
 
-// روند تیم در هفته‌هایی که امتیاز خورده‌اند. دو نقطه که نباشد، خطی هم نیست.
-function Spark({ points, color }) {
-  if (points.length < 2) return <span className="spark-empty">—</span>;
-  const w = 96;
-  const h = 26;
-  const step = w / (points.length - 1);
-  const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${i * step},${h - (p.value / 10) * h}`).join(' ');
-  const last = points[points.length - 1];
-  const rising = last.value >= points[0].value;
-  return (
-    <svg className={`spark ${rising ? 'up' : 'down'}`} viewBox={`0 -3 ${w} ${h + 6}`} width={w} height={h + 6} aria-hidden="true">
-      <path d={d} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={(points.length - 1) * step} cy={h - (last.value / 10) * h} r="2.8" fill={color} />
-    </svg>
-  );
-}
-
-function LeagueRow({ team, mentor, summary, rank, selected, onSelect }) {
-  return (
-    <button
-      type="button"
-      className={`league-row ${selected ? 'on' : ''}`}
-      style={{ '--team-color': team.color }}
-      onClick={() => onSelect(team.id)}
-    >
-      <span className="league-rank tnum">{faDigits(rank)}</span>
-      <span className="league-badge" aria-hidden="true">
-        {(team.latin ?? team.name).slice(0, 2).toUpperCase()}
-      </span>
-      <span className="league-id">
-        <strong>{team.name}</strong>
-        <i>{mentor?.name ?? '—'}</i>
-      </span>
-      <span className="league-people tnum">{faDigits(team.members.length)} نفر</span>
-      <Spark points={summary.byWeek} color={team.color} />
-      <span className="league-score tnum">{summary.overall === null ? '—' : faDigits(summary.overall.toFixed(1))}</span>
-    </button>
-  );
-}
-
-function MemberRow({ member, axes, onSave, onRemove }) {
+function MemberRow({ member, onSave, onRemove }) {
   const [edit, setEdit] = useState(false);
   const [draft, setDraft] = useState({ name: member.name, seat: member.seat, photo: member.photo ?? '' });
   const [verdict, setVerdict] = useState(member.verdict ?? { call: 'none', note: '' });
@@ -161,14 +100,15 @@ function MemberRow({ member, axes, onSave, onRemove }) {
           </>
         )}
       </div>
-      <PowerChart axes={axes} values={member.traits ?? {}} size={132} labels={false} color="var(--team-color)" />
     </article>
   );
 }
 
 const SHEETS = [
-  ['people', 'نفرات و چارت قدرت'],
-  ['assessments', 'امتیازهای هفتگی'],
+  ['people', 'نفرات و تصمیم‌ها'],
+  // ردیف‌های خام، یکی به‌ازای هر (نفر، هفته، منتور) — نه میانگین. هر aggregate ای در خود
+  // صفحه‌ی گسترده ساخته می‌شود.
+  ['assessments', 'مشاهده‌های خام'],
   ['observations', 'مشاهده‌های منتورها'],
   ['hints', 'راهنمایی‌ها'],
 ];
@@ -250,10 +190,17 @@ function Backups() {
 //
 // Retiring keeps the axis and its scores and stops offering it for new scoring. Deleting
 // would rewrite the past: a week's average would change months later with no record of why.
-function AxisEditor({ axes, onRename, onAdd, onArchive }) {
+// ویرایشگر معیارها. شناسه دست نمی‌خورد، پس هر مشاهده‌ای که تا حالا ثبت شده سر جایش
+// می‌ماند حتی اگر متن معیار عوض شود.
+//
+// متنِ چهار سطح هم ویرایش‌پذیر است و معیار تازه بدون هر چهار سطح ساخته نمی‌شود: عددی که
+// سطحش توضیح ندارد بین دو منتور قابل مقایسه نیست، و کل این سیستم روی همان مقایسه بنا شده.
+function CompetencyEditor({ competencies, onUpdate, onAdd, onArchive }) {
   const [open, setOpen] = useState(false);
-  const [label, setLabel] = useState('');
-  const [ask, setAsk] = useState('');
+  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState({ label: '', question: '', levels: ['', '', '', ''] });
+
+  const blank = { label: '', question: '', levels: ['', '', '', ''] };
 
   return (
     <section className="staff-card axes">
@@ -264,26 +211,85 @@ function AxisEditor({ axes, onRename, onAdd, onArchive }) {
         </button>
       </header>
       <p className="staff-note">
-        اسم معیار عوض می‌شود و امتیازهای داده‌شده سر جایشان می‌مانند. معیار بازنشسته هم پاک نمی‌شود — از فرم
-        شنبه برداشته می‌شود ولی نمره‌های قبلی‌اش خوانا می‌مانند.
+        متن معیار عوض می‌شود و مشاهده‌های ثبت‌شده سر جایشان می‌مانند. معیار بازنشسته پاک نمی‌شود — از فرم
+        برداشته می‌شود ولی مشاهده‌های قبلی‌اش خوانا می‌مانند.
       </p>
+
       {open && (
         <div className="axes-col">
-          {axes.traits.map((axis) => (
-            <div key={axis.id} className={`axis-row ${axis.archived ? 'archived' : ''}`}>
-              <input
-                className="axis-input"
-                defaultValue={axis.label}
-                onBlur={(e) => e.target.value.trim() !== axis.label && onRename('traits', axis.id, e.target.value)}
-              />
+          {competencies.map((competency) => (
+            <div key={competency.id} className={`axis-row ${competency.archived ? 'archived' : ''}`}>
+              <div className="axis-main">
+                <strong dir="ltr">{competency.label}</strong>
+                <em className="axis-ask">{competency.question}</em>
+              </div>
               <button
                 type="button"
                 className="staff-link"
-                onClick={() => onArchive('traits', axis.id, !axis.archived)}
+                onClick={() => {
+                  setEditing(editing === competency.id ? null : competency.id);
+                  setDraft({
+                    label: competency.label,
+                    question: competency.question ?? '',
+                    levels: competency.levels.map((l) => l.label),
+                  });
+                }}
               >
-                {axis.archived ? 'برگردان' : 'بازنشسته کن'}
+                {editing === competency.id ? 'بستن' : 'ویرایش'}
               </button>
-              {axis.ask && <em className="axis-ask">{axis.ask}</em>}
+              <button
+                type="button"
+                className="staff-link"
+                onClick={() => onArchive(competency.id, !competency.archived)}
+              >
+                {competency.archived ? 'برگردان' : 'بازنشسته کن'}
+              </button>
+
+              {editing === competency.id && (
+                <div className="axis-edit">
+                  <input
+                    className="axis-input"
+                    value={draft.label}
+                    placeholder="اسم معیار"
+                    onChange={(e) => setDraft({ ...draft, label: e.target.value })}
+                  />
+                  <input
+                    className="axis-input"
+                    value={draft.question}
+                    placeholder="سؤالی که بالای فرم می‌آید"
+                    onChange={(e) => setDraft({ ...draft, question: e.target.value })}
+                  />
+                  {draft.levels.map((level, i) => (
+                    <input
+                      key={i}
+                      className="axis-input"
+                      value={level}
+                      placeholder={`سطح ${'۱۲۳۴'[i]}`}
+                      onChange={(e) => {
+                        const levels = [...draft.levels];
+                        levels[i] = e.target.value;
+                        setDraft({ ...draft, levels });
+                      }}
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    className="staff-primary"
+                    onClick={() =>
+                      onUpdate(competency.id, {
+                        label: draft.label,
+                        question: draft.question,
+                        levels: draft.levels.map((label, i) => ({
+                          label,
+                          hint: competency.levels[i]?.hint ?? '',
+                        })),
+                      }).then(() => setEditing(null))
+                    }
+                  >
+                    ذخیره
+                  </button>
+                </div>
+              )}
             </div>
           ))}
 
@@ -291,29 +297,51 @@ function AxisEditor({ axes, onRename, onAdd, onArchive }) {
             <h4>معیار تازه</h4>
             <input
               className="axis-input"
-              value={label}
+              value={editing === 'new' ? draft.label : ''}
               placeholder="اسم معیار"
-              onChange={(e) => setLabel(e.target.value)}
+              onFocus={() => editing !== 'new' && (setEditing('new'), setDraft(blank))}
+              onChange={(e) => setDraft({ ...draft, label: e.target.value })}
             />
-            <input
-              className="axis-input"
-              value={ask}
-              placeholder="سؤالی که منتور شنبه می‌پرسد — بدون این، عدد هر منتور معنی خودش را دارد"
-              onChange={(e) => setAsk(e.target.value)}
-            />
-            <button
-              type="button"
-              className="staff-primary"
-              disabled={!label.trim()}
-              onClick={() =>
-                onAdd('traits', { label, ask }).then(() => {
-                  setLabel('');
-                  setAsk('');
-                })
-              }
-            >
-              اضافه کن
-            </button>
+            {editing === 'new' && (
+              <>
+                <input
+                  className="axis-input"
+                  value={draft.question}
+                  placeholder="سؤالی که بالای فرم می‌آید"
+                  onChange={(e) => setDraft({ ...draft, question: e.target.value })}
+                />
+                {draft.levels.map((level, i) => (
+                  <input
+                    key={i}
+                    className="axis-input"
+                    value={level}
+                    placeholder={`سطح ${'۱۲۳۴'[i]} — بدون توضیح، عدد این معیار قابل مقایسه نیست`}
+                    onChange={(e) => {
+                      const levels = [...draft.levels];
+                      levels[i] = e.target.value;
+                      setDraft({ ...draft, levels });
+                    }}
+                  />
+                ))}
+                <button
+                  type="button"
+                  className="staff-primary"
+                  disabled={!draft.label.trim() || draft.levels.some((l) => !l.trim())}
+                  onClick={() =>
+                    onAdd({
+                      label: draft.label,
+                      question: draft.question,
+                      levels: draft.levels.map((label) => ({ label, hint: '' })),
+                    }).then(() => {
+                      setDraft(blank);
+                      setEditing(null);
+                    })
+                  }
+                >
+                  اضافه کن
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -321,35 +349,97 @@ function AxisEditor({ axes, onRename, onAdd, onArchive }) {
   );
 }
 
+// §۲۵ — ناظر ارشد در همه‌ی جلسات نیست؛ برای جلسه‌ی مشخصی assign می‌شود.
+function ObserverPlanner({ weeks, teams, observers, assignments, onAssign, onRemove }) {
+  const [weekId, setWeekId] = useState(weeks[0]?.id ?? 1);
+  const [teamId, setTeamId] = useState(teams[0]?.id ?? '');
+  const [observer, setObserver] = useState(observers[0]?.id ?? '');
+
+  return (
+    <section className="staff-card">
+      <header className="staff-card-head">
+        <h3>ناظر ارشد</h3>
+      </header>
+      <p className="staff-note">
+        مشاهده‌ی مستقل، جایی که اختلاف بین منتورها بالاست یا شواهد کم است. رأی ناظر ارشد وزن بیشتری
+        ندارد — فقط یک دیدِ سوم است.
+      </p>
+
+      {observers.length === 0 ? (
+        <p className="staff-note">هنوز حسابی با نقش ناظر ارشد ساخته نشده.</p>
+      ) : (
+        <div className="obsplan">
+          <select value={weekId} onChange={(e) => setWeekId(Number(e.target.value))}>
+            {weeks.map((w) => (
+              <option key={w.id} value={w.id}>
+                هفته‌ی {faDigits(w.id)}
+              </option>
+            ))}
+          </select>
+          <select value={teamId} onChange={(e) => setTeamId(e.target.value)}>
+            {teams.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <select value={observer} onChange={(e) => setObserver(e.target.value)}>
+            {observers.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="staff-primary"
+            onClick={() => onAssign({ weekId, teamId, observer, kind: 'planned' })}
+          >
+            assign کن
+          </button>
+        </div>
+      )}
+
+      <ul className="obs-list">
+        {assignments.map((a) => (
+          <li key={a.id} className="obs-item">
+            <span>
+              هفته‌ی {faDigits(a.weekId)} · {teams.find((t) => t.id === a.teamId)?.name ?? a.teamId} ·{' '}
+              {observers.find((o) => o.id === a.observer)?.name ?? a.observer}
+            </span>
+            <button type="button" className="staff-link danger" onClick={() => onRemove(a.id)}>
+              حذف
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export default function LeadDesk({ board, run }) {
-  // همان محورهایی که منتور شنبه‌ها نمره می‌دهد. یک دسته معیار، یک جا نمره‌خورده.
-  const axes = board.axes.traits.filter((a) => !a.archived);
+  const assessments = board.assessments ?? [];
+  const competencies = board.competencies ?? [];
   const summaries = useMemo(
-    () => Object.fromEntries(board.teams.map((t) => [t.id, summarise(t, board.evaluations ?? [], axes)])),
-    [board.teams, board.evaluations, axes],
+    () => Object.fromEntries(board.teams.map((t) => [t.id, summarise(t, assessments)])),
+    [board.teams, assessments],
   );
-  const ranked = useMemo(
-    () => [...board.teams].sort((a, b) => (summaries[b.id].overall ?? -1) - (summaries[a.id].overall ?? -1)),
-    [board.teams, summaries],
-  );
-  const [pickedId, setPicked] = useState(() => ranked[0]?.id);
+  const [pickedId, setPicked] = useState(() => board.teams[0]?.id);
   const team = board.teams.find((t) => t.id === pickedId) ?? board.teams[0];
   const summary = team ? summaries[team.id] : null;
   const mentorOf = (t) => board.mentors.find((m) => m.teamId === t.id);
   const [hint, setHint] = useState('');
 
-  // تیمی که از همه عقب‌تر است و کسی که هنوز تصمیمی درباره‌اش گرفته نشده — دو چیزی که
-  // مسئول برنامه باید اول ببیند.
-  const attention = useMemo(() => {
-    const scored = board.teams.filter((t) => summaries[t.id].overall !== null);
-    const behind = scored.length > 1 ? ranked[ranked.length - 1] : null;
-    const undecided = board.teams.flatMap((t) =>
-      t.members.filter((m) => (m.verdict?.call ?? 'none') === 'none').map((m) => ({ team: t, member: m })),
-    );
-    return { behind, undecided };
-  }, [board.teams, summaries, ranked]);
+  // «تیمی که عقب است» عمداً حذف شد: رتبه‌بندی تیم‌ها همان چیزی است که سند ممنوع کرده.
+  // چیزی که می‌ماند تصمیم‌های گرفته‌نشده است — کاری که فقط مسئول برنامه می‌تواند بکند.
+  const undecided = useMemo(
+    () =>
+      board.teams.flatMap((t) =>
+        t.members.filter((m) => (m.verdict?.call ?? 'none') === 'none').map((m) => ({ team: t, member: m })),
+      ),
+    [board.teams],
+  );
 
-  const evaluations = board.evaluations ?? [];
   const [tab, setTab] = useState('now');
 
   // The badge on "این هفته" is how many people the mentors still owe a review for the
@@ -358,13 +448,15 @@ export default function LeadDesk({ board, run }) {
   const owed = useMemo(() => {
     const active = board.weeks.find((w) => w.status === 'active');
     if (!active) return 0;
-    const done = new Set(evaluations.filter((e) => e.weekId === active.id).map((e) => e.memberId));
+    const done = new Set(
+      submitted(assessments).filter((a) => a.weekId === active.id).map((a) => a.memberId),
+    );
     return board.teams.reduce((n, t) => n + t.members.filter((m) => !done.has(m.id)).length, 0);
-  }, [board.weeks, board.teams, evaluations]);
+  }, [board.weeks, board.teams, assessments]);
 
   const tabs = [
     { id: 'now', label: 'این هفته', count: owed },
-    { id: 'learning', label: 'ارزیابی یادگیری' },
+    { id: 'learning', label: 'مشاهده‌ها' },
     { id: 'teams', label: 'تیم‌ها' },
     { id: 'setup', label: 'معیارها و پشتیبان' },
   ];
@@ -393,7 +485,7 @@ export default function LeadDesk({ board, run }) {
           </div>
           <div>
             <dt>بدون تصمیم</dt>
-            <dd className="tnum">{faDigits(attention.undecided.length)}</dd>
+            <dd className="tnum">{faDigits(undecided.length)}</dd>
           </div>
         </dl>
       </header>
@@ -404,7 +496,7 @@ export default function LeadDesk({ board, run }) {
         <ThisWeek
           teams={board.teams}
           weeks={board.weeks}
-          evaluations={evaluations}
+          assessments={submitted(assessments)}
           mentors={board.mentors}
           onGoTeam={(id) => {
             setPicked(id);
@@ -416,74 +508,42 @@ export default function LeadDesk({ board, run }) {
 
       {tab === 'teams' && (
        <>
-      {attention.behind && (
-        <p className="lead-flag">
-          <FlagIcon size={14} />
-          «{attention.behind.name}» پایین جدول است. یا آموزش جداگانه لازم دارد یا منتورش باید بداند کجا را نگاه کند.
-        </p>
-      )}
-
+      {/* جدول لیگ و «تیمی که عقب است» حذف شدند. رتبه‌بندی تیم‌ها و نمره‌ی کلی هر دو
+          صریحاً ممنوع‌اند: یک عدد به‌ازای هر تیم، مشاهده‌ها را به چیزی تبدیل می‌کند که
+          نیستند. انتخابِ تیم حالا فقط یک انتخاب است، نه یک رتبه. */}
       <section className="staff-card league">
         <header className="staff-card-head">
-          <h3>جدول تیم‌ها</h3>
-          <span className="staff-note">مرتب‌شده بر اساس میانگین امتیاز هفتگی</span>
+          <h3>تیم‌ها</h3>
+          <span className="staff-note">پوشش مشاهده‌ها، نه رتبه</span>
         </header>
         <div className="league-list">
-          {ranked.map((t, i) => (
-            <LeagueRow
-              key={t.id}
-              team={t}
-              rank={i + 1}
-              mentor={mentorOf(t)}
-              summary={summaries[t.id]}
-              selected={t.id === team.id}
-              onSelect={setPicked}
-            />
-          ))}
+          {board.teams.map((t) => {
+            const sum = summaries[t.id];
+            const people = t.members.length;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                className={`league-row ${t.id === team.id ? 'on' : ''}`}
+                style={{ '--team-color': t.color }}
+                onClick={() => setPicked(t.id)}
+              >
+                <span className="league-badge">{(t.latin ?? t.name).slice(0, 2).toUpperCase()}</span>
+                <span className="league-id">
+                  <strong>{t.name}</strong>
+                  <i>{mentorOf(t)?.name ?? '—'}</i>
+                </span>
+                <span className="league-people tnum">{faDigits(people)} نفر</span>
+                <span className="league-score tnum">
+                  {sum.weeks > 0 ? `${faDigits(sum.weeks)} هفته` : '—'}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </section>
 
       <div className="lead-detail" style={{ '--team-color': team.color }}>
-        <section className="staff-card">
-          <header className="staff-card-head">
-            <h3>
-              {team.name} — منتور: {mentorOf(team)?.name ?? '—'}
-            </h3>
-            <span className="staff-note tnum">
-              {summary.weeksScored > 0 ? `${faDigits(summary.weeksScored)} هفته امتیاز خورده` : 'هنوز امتیازی ثبت نشده'}
-            </span>
-          </header>
-          <div className="scoring-grid">
-            {axes.map((axis) => (
-              <ScoreBar
-                key={axis.id}
-                label={axis.label}
-                hint={axis.hint}
-                color={team.color}
-                readOnly
-                value={summary.perAxis[axis.id] ? Math.round(summary.perAxis[axis.id]) : 0}
-              />
-            ))}
-          </div>
-          {summary.rows.length > 0 && (
-            <ul className="week-notes">
-              {[...summary.rows]
-                .sort((a, b) => b.weekId - a.weekId)
-                .filter((r) => r.note)
-                .map((r) => (
-                  <li key={r.id}>
-                    {/* هر ردیف مال یک نفر است، پس بدون اسم، چند یادداشتِ یک هفته از هم
-                        قابل تشخیص نیستند. */}
-                    <span className="tnum">
-                      هفته‌ی {faDigits(r.weekId)} · {team.members.find((m) => m.id === r.memberId)?.name ?? '—'}
-                    </span>
-                    <p>{r.note}</p>
-                  </li>
-                ))}
-            </ul>
-          )}
-        </section>
-
         <section className="staff-card">
           <header className="staff-card-head">
             <h3>
@@ -560,7 +620,6 @@ export default function LeadDesk({ board, run }) {
               <MemberRow
                 key={member.id}
                 member={member}
-                axes={board.axes.traits}
                 onSave={(patch) => run(() => api.patchMember(member.id, patch))}
                 onRemove={() => run(() => api.removeMember(member.id))}
               />
@@ -572,21 +631,24 @@ export default function LeadDesk({ board, run }) {
       )}
 
       {tab === 'learning' && (
-        <LearningView
-          teams={board.teams}
-          axes={board.axes.traits}
-          weeks={board.weeks}
-          evaluations={evaluations}
-        />
+        <LearningView board={board} weekId={board.weeks.find((w) => w.status === 'active')?.id ?? board.weeks[0]?.id ?? 1} />
       )}
 
       {tab === 'setup' && (
         <>
-          <AxisEditor
-            axes={board.axes}
-            onRename={(kind, id, label) => run(() => api.renameAxis(kind, id, label))}
-            onAdd={(kind, body) => run(() => api.addAxis(kind, body))}
-            onArchive={(kind, id, archived) => run(() => api.archiveAxis(kind, id, archived))}
+          <CompetencyEditor
+            competencies={competencies}
+            onUpdate={(id, patch) => run(() => api.updateCompetency(id, patch))}
+            onAdd={(body) => run(() => api.addCompetency(body))}
+            onArchive={(id, archived) => run(() => api.archiveCompetency(id, archived))}
+          />
+          <ObserverPlanner
+            weeks={board.weeks}
+            teams={board.teams}
+            observers={board.mentors.filter((m) => m.mentorRole === 'senior_observer')}
+            assignments={board.observerAssignments ?? []}
+            onAssign={(body) => run(() => api.assignObserver(body))}
+            onRemove={(id) => run(() => api.removeObserverAssignment(id))}
           />
           <Backups />
         </>

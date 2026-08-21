@@ -3,10 +3,9 @@ import { OBSERVATION_KINDS } from '../content/people';
 import { api } from '../lib/api';
 import { faDigits } from '../lib/time';
 import Avatar from './Avatar';
-import PowerChart from './PowerChart';
 import PanelTabs from './PanelTabs';
-import SaturdayReview from './SaturdayReview';
-import { BoltIcon, CheckIcon } from './icons';
+import AssessmentForm from './AssessmentForm';
+import { BoltIcon } from './icons';
 
 const KIND = Object.fromEntries(OBSERVATION_KINDS.map((k) => [k.id, k]));
 
@@ -23,10 +22,10 @@ function Crest({ team, size = 76 }) {
   );
 }
 
-// The chart is a read-out now, not an input. Scoring happens once, in the Saturday review
-// below, which writes a row per week; this shows the newest of those rows. When both could
-// be edited the last one saved silently won, and the two disagreed about which week it was.
-function PlayerCard({ member, axes, latest }) {
+// نمودار توانِ قدیمی با مقیاس ۰ تا ۱۰ رفت. جایش عمداً خالی مانده: خلاصه‌ی چند منتور در
+// چند هفته کارِ داشبورد مدیر است، و نشان‌دادنش این‌جا یعنی منتور قبل از قضاوتِ هفته‌ی بعد
+// عددِ خودش را می‌بیند.
+function PlayerCard({ member, latest }) {
   return (
     <article className={`player ${member.photo ? '' : 'fake'}`}>
       <div className="player-face">
@@ -38,10 +37,8 @@ function PlayerCard({ member, axes, latest }) {
         </div>
       </div>
 
-      <PowerChart axes={axes} values={member.traits ?? {}} size={188} color="var(--team-color)" />
-
       <span className="player-asof">
-        {latest ? `آخرین ارزیابی: هفته‌ی ${faDigits(latest.weekId)}` : 'هنوز ارزیابی نشده'}
+        {latest ? `آخرین مشاهده: هفته‌ی ${faDigits(latest.weekId)}` : 'هنوز مشاهده‌ای ثبت نشده'}
       </span>
     </article>
   );
@@ -109,6 +106,10 @@ function Observations({ team, weekId, observations, onAdd, onRemove }) {
   );
 }
 
+// داشبورد منتور: «جلسه تمام شده؟ برداشتت را ثبت کن.»
+//
+// یک نفر در هر لحظه، و بعد از ثبت خودکار نفر بعدی باز می‌شود — برگشتن به فهرست بین هر
+// دو نفر، همان چیزی است که ثبتِ یک تیم چهارنفره را از دو دقیقه به یک کار می‌کند.
 export default function MentorDesk({ board, run }) {
   const team = board.teams[0];
   const [weekId, setWeekId] = useState(() => {
@@ -116,40 +117,32 @@ export default function MentorDesk({ board, run }) {
     return active?.id ?? board.weeks[0]?.id ?? 1;
   });
 
-  const evaluations = board.evaluations ?? [];
+  const assessments = board.assessments ?? [];
+  const competencies = board.competencies ?? [];
   const hints = board.hints.filter((h) => h.teamId === team?.id);
+  const me = board.me?.user;
 
-  // The team's number is its people's numbers, averaged. Nothing stores it, so it cannot
-  // drift away from what the mentor actually recorded about each person.
-  const squadAverage = useMemo(() => {
-    const all = evaluations
-      .filter((e) => e.teamId === team?.id)
-      .flatMap((e) => Object.values(e.scores ?? {}))
-      .filter((n) => typeof n === 'number');
-    return all.length > 0 ? (all.reduce((x, y) => x + y, 0) / all.length).toFixed(1) : null;
-  }, [evaluations, team]);
+  const rowFor = (memberId) =>
+    assessments.find((a) => a.memberId === memberId && a.weekId === weekId && a.author === me) ?? null;
 
-  // The newest row per person, for the chart's "as of" line.
   const latestFor = (memberId) =>
-    evaluations
-      .filter((e) => e.memberId === memberId)
+    assessments
+      .filter((a) => a.memberId === memberId && a.author === me && a.status === 'submitted')
       .sort((a, b) => b.weekId - a.weekId)[0] ?? null;
 
   const [tab, setTab] = useState('review');
+  const [openId, setOpenId] = useState(null);
+  // ثبت‌شده‌های همین نشست. `advance` بلافاصله بعد از ثبت اجرا می‌شود و اگر فقط به board
+  // نگاه کند، نسخه‌ی قدیمیِ closure را می‌بیند و همان نفر را دوباره باز می‌کند.
+  const [justDone, setJustDone] = useState(() => new Set());
 
-  // How many of this mentor's people they have not reviewed for the week on screen. It sits
-  // on the tab so it is still visible from the other two, which is the whole reason the
-  // count exists — the review is the one thing on this desk with a deadline.
-  const pending = useMemo(() => {
-    if (!team) return 0;
-    const done = new Set(
-      evaluations.filter((e) => e.weekId === weekId && e.author === board.me?.user).map((e) => e.memberId),
-    );
-    return team.members.filter((m) => !done.has(m.id)).length;
-  }, [team, evaluations, weekId, board.me]);
+  const members = team?.members ?? [];
+  const isDone = (memberId) => justDone.has(memberId) || rowFor(memberId)?.status === 'submitted';
+  const doneCount = members.filter((m) => isDone(m.id)).length;
+  const pending = members.length - doneCount;
 
   const tabs = [
-    { id: 'review', label: `ارزیابی شنبه`, count: pending },
+    { id: 'review', label: 'ارزیابی هفته', count: pending },
     { id: 'squad', label: 'ترکیب تیم' },
     { id: 'obs', label: 'مشاهده‌ها' },
   ];
@@ -157,6 +150,17 @@ export default function MentorDesk({ board, run }) {
   if (!team) {
     return <p className="staff-note">هنوز تیمی به شما وصل نشده. مسئول برنامه این را از پنل خودش درست می‌کند.</p>;
   }
+
+  // نفر بعدی‌ای که هنوز ثبت نشده. اگر چیزی نمانده باشد، فرم بسته می‌شود و فهرست برمی‌گردد.
+  function advance(fromId) {
+    const seen = new Set(justDone).add(fromId);
+    setJustDone(seen);
+    const rest = members.filter((m) => m.id !== fromId && !seen.has(m.id) && rowFor(m.id)?.status !== 'submitted');
+    setOpenId(rest[0]?.id ?? null);
+  }
+
+  const open = members.find((m) => m.id === openId) ?? null;
+  const remaining = members.filter((m) => m.id !== openId && !isDone(m.id)).length;
 
   return (
     <div className="mentor" style={{ '--team-color': team.color }}>
@@ -171,11 +175,13 @@ export default function MentorDesk({ board, run }) {
         <dl className="mentor-hero-stats">
           <div>
             <dt>نفرات</dt>
-            <dd className="tnum">{faDigits(team.members.length)}</dd>
+            <dd className="tnum">{faDigits(members.length)}</dd>
           </div>
           <div>
-            <dt>میانگین کل</dt>
-            <dd className="tnum">{squadAverage ? faDigits(squadAverage) : '—'}</dd>
+            <dt>این هفته</dt>
+            <dd className="tnum">
+              {faDigits(doneCount)}/{faDigits(members.length)}
+            </dd>
           </div>
           <div>
             <dt>مشاهده‌ها</dt>
@@ -212,21 +218,59 @@ export default function MentorDesk({ board, run }) {
                 key={week.id}
                 type="button"
                 className={`weekpick-item ${week.id === weekId ? 'on' : ''} ${week.status === 'locked' ? 'shut' : ''}`}
-                onClick={() => setWeekId(week.id)}
+                onClick={() => {
+                  setWeekId(week.id);
+                  setOpenId(null);
+                  setJustDone(new Set());
+                }}
               >
                 {faDigits(week.id)}
               </button>
             ))}
           </div>
 
-          <SaturdayReview
-            team={team}
-            axes={board.axes.traits}
-            weekId={weekId}
-            evaluations={evaluations}
-            me={board.me?.user}
-            onSave={(body) => run(() => api.saveEvaluation(body))}
-          />
+          {open ? (
+            <AssessmentForm
+              key={`${open.id}:${weekId}`}
+              member={open}
+              weekId={weekId}
+              competencies={competencies}
+              row={rowFor(open.id)}
+              isLast={remaining === 0}
+              // draft بدون refetch ذخیره می‌شود؛ ثبت نهایی از مسیر run می‌رود تا برد تازه شود.
+              onDraft={(body) => api.saveAssessment(body)}
+              onSubmit={(body) => run(() => api.saveAssessment(body))}
+              onDone={() => advance(open.id)}
+            />
+          ) : (
+            <section className="staff-card roster-pick">
+              <header className="staff-card-head">
+                <h3>ارزیابی هفته‌ی {faDigits(weekId)}</h3>
+                <span className="staff-note">جلسه تمام شده؟ برداشتت از عملکرد اعضای تیم را ثبت کن.</span>
+              </header>
+              <p className="assess-count">
+                {faDigits(doneCount)} از {faDigits(members.length)} نفر تکمیل شده
+              </p>
+              <ul className="pcards">
+                {members.map((member) => {
+                  const row = rowFor(member.id);
+                  const done = isDone(member.id);
+                  return (
+                    <li key={member.id} className={done ? 'done' : ''}>
+                      <Avatar person={member} size={38} />
+                      <span className="pcard-id">
+                        <strong>{member.name}</strong>
+                        <i>{done ? '✓ تکمیل شده' : row ? 'پیش‌نویس دارد' : 'ارزیابی نشده'}</i>
+                      </span>
+                      <button type="button" className="staff-link" onClick={() => setOpenId(member.id)}>
+                        {done ? 'مشاهده ارزیابی' : 'ارزیابی'}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
         </>
       )}
 
@@ -234,16 +278,11 @@ export default function MentorDesk({ board, run }) {
         <section className="staff-card squad">
           <header className="staff-card-head">
             <h3>ترکیب تیم</h3>
-            <span className="staff-note">چارت هر نفر، از آخرین ارزیابی شنبه‌ی او.</span>
+            <span className="staff-note">خلاصه‌ی چند منتور در چند هفته، کارِ پنل مسئول برنامه است.</span>
           </header>
           <div className="squad-grid">
-            {team.members.map((member) => (
-              <PlayerCard
-                key={member.id}
-                member={member}
-                axes={board.axes.traits.filter((a) => !a.archived)}
-                latest={latestFor(member.id)}
-              />
+            {members.map((member) => (
+              <PlayerCard key={member.id} member={member} latest={latestFor(member.id)} />
             ))}
           </div>
         </section>

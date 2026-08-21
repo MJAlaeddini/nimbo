@@ -84,6 +84,7 @@ export const api = {
 
   // --- mentors and the programme lead ---
   board: () => request('/api/staff/board', { auth: true }),
+  // یک مشاهده. `status` یا draft است یا submitted؛ نقش منتور را سرور از روی حساب می‌گذارد.
   saveAssessment: (body) => request('/api/staff/assessments', { method: 'PUT', body, auth: true }),
   addObservation: (body) => request('/api/staff/observations', { method: 'POST', body, auth: true }),
   removeObservation: (id) => request(`/api/staff/observations/${id}`, { method: 'DELETE', auth: true }),
@@ -91,15 +92,16 @@ export const api = {
   addHint: (body) => request('/api/staff/hints', { method: 'POST', body, auth: true }),
   readHint: (id) => request(`/api/staff/hints/${id}/read`, { method: 'POST', auth: true }),
   removeHint: (id) => request(`/api/staff/hints/${id}`, { method: 'DELETE', auth: true }),
-  patchTeam: (id, patch) => request(`/api/staff/teams/${id}`, { method: 'PATCH', body: patch, auth: true }),
   addMember: (teamId, body) => request(`/api/staff/teams/${teamId}/members`, { method: 'POST', body, auth: true }),
   removeMember: (id) => request(`/api/staff/members/${id}`, { method: 'DELETE', auth: true }),
-  saveEvaluation: (body) => request('/api/staff/evaluations', { method: 'PUT', body, auth: true }),
-  renameAxis: (kind, id, label) =>
-    request(`/api/staff/axes/${kind}/${id}`, { method: 'PATCH', body: { label }, auth: true }),
-  addAxis: (kind, body) => request(`/api/staff/axes/${kind}`, { method: 'POST', body, auth: true }),
-  archiveAxis: (kind, id, archived) =>
-    request(`/api/staff/axes/${kind}/${id}`, { method: 'PATCH', body: { archived }, auth: true }),
+  updateCompetency: (id, patch) =>
+    request(`/api/staff/competencies/${id}`, { method: 'PATCH', body: patch, auth: true }),
+  addCompetency: (body) => request('/api/staff/competencies', { method: 'POST', body, auth: true }),
+  archiveCompetency: (id, archived) =>
+    request(`/api/staff/competencies/${id}`, { method: 'PATCH', body: { archived }, auth: true }),
+  assignObserver: (body) => request('/api/staff/observer-assignments', { method: 'POST', body, auth: true }),
+  removeObserverAssignment: (id) =>
+    request(`/api/staff/observer-assignments/${id}`, { method: 'DELETE', auth: true }),
   backups: () => request('/api/staff/backups', { auth: true }),
   makeBackup: () => request('/api/staff/backups', { method: 'POST', auth: true }),
 

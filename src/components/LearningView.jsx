@@ -1,92 +1,84 @@
-import { Fragment, useMemo, useState } from 'react';
-import { DEFENCE_OUTCOMES } from '../content/people';
+import { useMemo, useState } from 'react';
 import { faDigits } from '../lib/time';
+import { disagreement, evidenceLevel, forMember, submitted, weekly } from '../../server/src/aggregate';
 
-// What the lead can see once evaluations are per person, per week — three things that the
-// old team-level snapshot could not answer at all:
+// نمای مسئول برنامه روی مشاهده‌ها.
 //
-//   1. has a given person moved, and on which axis
-//   2. which teams are carrying which gaps, side by side
-//   3. what nobody understood — the same gap showing up under more than one mentor, which
-//      is the signal to re-teach a topic rather than to chase four people separately
+// هیچ نمره‌ی کلی و هیچ رتبه‌بندی‌ای این‌جا نیست و عمدی است: یک عدد به‌ازای هر آدم، دقیقاً
+// همان چیزی است که این سیستم قرار بود جایگزینش شود. چیزی که نشان داده می‌شود این‌هاست —
+// کجا رشد هست، کجا افت، کجا منتورها اختلاف دارند و کجا اصلاً شواهد کافی نداریم.
 //
-// Everything here is derived. No team score is stored, so there is nothing to keep in sync
-// and no way for the summary to disagree with what a mentor recorded.
+// median و disagreement از aggregate.js می‌آیند، همان فایلی که سرور و CSV هم از آن
+// می‌خوانند؛ وگرنه دو عدد روی یک صفحه دو چیز مختلف می‌گویند.
 
-const OUTCOME = Object.fromEntries(DEFENCE_OUTCOMES.map((o) => [o.id, o]));
+const EVIDENCE = { strong: 'شواهد کافی', moderate: 'شواهد متوسط', low: 'شواهد کم', none: 'بدون شواهد' };
+const TREND = { improving: '▲ رو به رشد', declining: '▼ رو به افت', stable: '→ باثبات', unknown: '—' };
+const ROLE = { team_mentor: 'منتور تیم', core_mentor: 'منتور اصلی', senior_observer: 'ناظر ارشد' };
 
-const mean = (nums) => (nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : null);
-
-// Average of every axis in one row — one person's standing that week.
-function rowMean(row) {
-  return mean(Object.values(row.scores ?? {}).filter((n) => typeof n === 'number'));
-}
-
-function Cell({ value }) {
-  if (value === null) return <td className="heat none" title="ارزیابی نشده" />;
-  // Ten buckets, so the colour carries the number rather than decorating it.
-  const step = Math.round(value);
+function Cell({ point, onOpen }) {
+  if (!point || point.value === null) {
+    // §۴۲ — هیچ‌وقت «۰ از ۴» نشان داده نشود. نبودِ داده، صفر نیست.
+    return (
+      <td className="heat none" title={point?.notObserved ? 'مشاهده نشد' : 'هنوز داده‌ای نیست'}>
+        {point?.notObserved ? '·' : ''}
+      </td>
+    );
+  }
+  const spread = disagreement(point.raters.map((r) => r.rating));
   return (
-    <td className={`heat s${step}`} title={`میانگین ${value.toFixed(1)}`}>
-      <span className="tnum">{faDigits(value.toFixed(1))}</span>
+    <td className={`heat s${Math.round(point.value)} ${spread ? 'split' : ''}`}>
+      <button type="button" onClick={onOpen} title={`${point.observed} مشاهده`}>
+        {faDigits(point.value)}
+        {spread ? <i aria-label="اختلاف بین منتورها">!</i> : null}
+      </button>
     </td>
   );
 }
 
-function PersonHeat({ teams, weeks, evaluations }) {
-  const open = weeks.filter((w) => w.status !== 'locked');
-
+// §۲۹ — هر نفر در برابر هر معیار، با median هفته‌های ثبت‌شده.
+function Heat({ teams, competencies, rows, onOpen }) {
   return (
     <div className="heatwrap">
       <table className="heat-table">
         <thead>
           <tr>
-            <th className="heat-name">نفر</th>
-            {open.map((w) => (
-              <th key={w.id} className="tnum">
-                {faDigits(w.id)}
+            <th>نفر</th>
+            {competencies.map((c) => (
+              <th key={c.id} dir="ltr">
+                {c.label}
               </th>
             ))}
-            <th>روند</th>
+            <th>شواهد</th>
           </tr>
         </thead>
         <tbody>
           {teams.map((team) => (
-            <Fragment key={team.id}>
-              <tr className="heat-team">
-                <th colSpan={open.length + 2} style={{ '--team-color': team.color }}>
-                  {team.name}
-                </th>
+            <>
+              <tr key={`t-${team.id}`} className="heat-team">
+                <th colSpan={competencies.length + 2}>{team.name}</th>
               </tr>
-              {team.members.map((m) => {
-                const byWeek = open.map((w) => {
-                  const rows = evaluations.filter((e) => e.memberId === m.id && e.weekId === w.id);
-                  return mean(rows.map(rowMean).filter((n) => n !== null));
-                });
-                const seen = byWeek.filter((n) => n !== null);
-                // First against last, not a fitted line: with three or four points a slope
-                // is more arithmetic than the data supports.
-                const trend = seen.length >= 2 ? seen[seen.length - 1] - seen[0] : null;
+              {team.members.map((member) => {
+                const summaries = competencies.map((c) => forMember(rows, member.id, c.id));
+                const total = summaries.reduce((n, s) => n + s.observations, 0);
                 return (
-                  <tr key={m.id}>
-                    <th className="heat-name">{m.name}</th>
-                    {byWeek.map((v, i) => (
-                      <Cell key={open[i].id} value={v} />
-                    ))}
-                    <td className="heat-trend">
-                      {trend === null ? (
-                        <span className="delta none">—</span>
-                      ) : (
-                        <span className={`delta ${trend > 0.2 ? 'up' : trend < -0.2 ? 'down' : 'flat'}`}>
-                          {trend > 0.2 ? '▲' : trend < -0.2 ? '▼' : '='}{' '}
-                          <span className="tnum">{faDigits(Math.abs(trend).toFixed(1))}</span>
-                        </span>
-                      )}
-                    </td>
+                  <tr key={member.id}>
+                    <th className="heat-name">{member.name}</th>
+                    {competencies.map((c, i) => {
+                      const summary = summaries[i];
+                      const last = summary.byWeek[summary.byWeek.length - 1];
+                      return (
+                        <Cell
+                          key={c.id}
+                          point={last}
+                          onOpen={() => onOpen({ member, competency: c, summary })}
+                        />
+                      );
+                    })}
+                    <td className="heat-trend">{EVIDENCE[evidenceLevel(total)]}</td>
                   </tr>
                 );
               })}
-            </Fragment>
+            </>
           ))}
         </tbody>
       </table>
@@ -94,168 +86,172 @@ function PersonHeat({ teams, weeks, evaluations }) {
   );
 }
 
-function AxisCompare({ teams, axes, evaluations }) {
-  const live = axes.filter((a) => !a.archived);
+// §۳۶ — صفی از چیزهایی که واقعاً نیاز به نگاه دارند، نه یک جدول که باید خودت تویش بگردی.
+function Attention({ teams, competencies, rows }) {
+  const items = useMemo(() => {
+    const out = [];
+    for (const team of teams) {
+      for (const member of team.members) {
+        for (const competency of competencies) {
+          const summary = forMember(rows, member.id, competency.id);
+          const last = summary.byWeek[summary.byWeek.length - 1];
+          const spread = last ? disagreement(last.raters.map((r) => r.rating)) : null;
+          if (spread) {
+            out.push({
+              kind: 'اختلاف بین منتورها',
+              member, team, competency,
+              detail: last.raters.map((r) => `${ROLE[r.mentorRole] ?? r.mentorRole}: ${faDigits(r.rating)}`).join(' · '),
+            });
+          } else if (summary.observations > 0 && summary.observations < 2) {
+            out.push({
+              kind: 'شواهد کم',
+              member, team, competency,
+              detail: `${faDigits(summary.observations)} مشاهده‌ی معتبر`,
+            });
+          } else if (summary.trend.direction === 'declining') {
+            out.push({
+              kind: 'روند نزولی',
+              member, team, competency,
+              detail: `تغییر ${faDigits(summary.trend.delta)} در ${faDigits(summary.weeks)} هفته`,
+            });
+          }
+        }
+      }
+    }
+    return out;
+  }, [teams, competencies, rows]);
+
+  if (items.length === 0) {
+    return <p className="staff-note">فعلاً چیزی نیست که نیاز به نگاه داشته باشد.</p>;
+  }
 
   return (
-    <div className="heatwrap">
-      <table className="heat-table">
-        <thead>
-          <tr>
-            <th className="heat-name">معیار</th>
-            {teams.map((t) => (
-              <th key={t.id}>{t.name}</th>
-            ))}
-            <th>همه</th>
-          </tr>
-        </thead>
-        <tbody>
-          {live.map((axis) => {
-            const per = teams.map((t) =>
-              mean(
-                evaluations
-                  .filter((e) => e.teamId === t.id && typeof e.scores?.[axis.id] === 'number')
-                  .map((e) => e.scores[axis.id]),
-              ),
-            );
-            // Across every row, not the average of the four team averages: with a team of
-            // four and a team of three, averaging the averages quietly weights a person on
-            // the smaller team more heavily, which is not what "همه" says.
-            const all = mean(
-              evaluations
-                .filter((e) => typeof e.scores?.[axis.id] === 'number')
-                .map((e) => e.scores[axis.id]),
-            );
-            return (
-              <tr key={axis.id}>
-                <th className="heat-name">
-                  {axis.label}
-                  {axis.ask && <em className="heat-ask">{axis.ask}</em>}
-                </th>
-                {per.map((v, i) => (
-                  <Cell key={teams[i].id} value={v} />
-                ))}
-                <Cell value={all} />
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <ul className="attn">
+      {items.map((item, i) => (
+        <li key={`${item.member.id}-${item.competency.id}-${i}`}>
+          <span className={`attn-kind ${item.kind === 'اختلاف بین منتورها' ? 'split' : ''}`}>{item.kind}</span>
+          <span className="attn-who">
+            <strong>{item.member.name}</strong>
+            <i>{item.team.name}</i>
+          </span>
+          <span className="attn-what" dir="ltr">
+            {item.competency.label}
+          </span>
+          <span className="attn-detail">{item.detail}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
-// The highest-value read in the panel: gaps written by different mentors, in one list.
-// A gap one mentor reports is a person to help; the same gap from three mentors is a
-// lesson that did not land, and that is a decision for the lead, not for the mentors.
-function GapBoard({ teams, evaluations, weeks }) {
-  const [weekId, setWeekId] = useState('all');
-  const teamName = Object.fromEntries(teams.map((t) => [t.id, t.name]));
-  const memberName = Object.fromEntries(
-    teams.flatMap((t) => t.members.map((m) => [m.id, m.name])),
+// §۴۰ — نوشته‌ها فقط در drill-down، نه روی داشبورد اصلی.
+function Drill({ open, rows, onClose }) {
+  if (!open) return null;
+  const { member, competency, summary } = open;
+  const notes = submitted(rows).filter(
+    (r) => r.memberId === member.id && r.note && competency.id in (r.ratings ?? {}),
   );
 
-  const rows = evaluations
-    .filter((e) => e.gap && (weekId === 'all' || e.weekId === Number(weekId)))
-    .sort((a, b) => b.weekId - a.weekId);
-
-  const teamsWithGaps = new Set(rows.map((r) => r.teamId));
-
   return (
-    <div className="gapboard">
-      <div className="weekpick" role="group" aria-label="هفته">
-        <button
-          type="button"
-          className={`weekpick-item ${weekId === 'all' ? 'on' : ''}`}
-          onClick={() => setWeekId('all')}
-        >
-          همه
+    <section className="staff-card drill">
+      <header className="staff-card-head">
+        <h3>
+          {member.name} — <span dir="ltr">{competency.label}</span>
+        </h3>
+        <button type="button" className="staff-link" onClick={onClose}>
+          بستن
         </button>
-        {weeks
-          .filter((w) => w.status !== 'locked')
-          .map((w) => (
-            <button
-              key={w.id}
-              type="button"
-              className={`weekpick-item ${weekId === w.id ? 'on' : ''}`}
-              onClick={() => setWeekId(w.id)}
-            >
-              {faDigits(w.id)}
-            </button>
-          ))}
-      </div>
+      </header>
 
-      {rows.length === 0 ? (
-        <p className="staff-note">هنوز شکافی ثبت نشده.</p>
+      <p className="drill-evidence">
+        {faDigits(summary.observations)} مشاهده · {faDigits(summary.weeks)} هفته ·{' '}
+        {faDigits(summary.raters)} منتور
+        {summary.notObserved > 0 && ` · ${faDigits(summary.notObserved)} بار مشاهده نشد`}
+        {' — '}
+        {EVIDENCE[summary.evidence]} · {TREND[summary.trend.direction]}
+      </p>
+
+      {summary.byWeek.length === 0 ? (
+        <p className="staff-note">هنوز داده کافی نداریم.</p>
       ) : (
-        <>
-          <p className="staff-note">
-            {faDigits(rows.length)} مورد، از {faDigits(teamsWithGaps.size)} تیم.
-            {teamsWithGaps.size >= 3 && ' وقتی سه تیم یا بیشتر یک چیز را ننوشته‌اند، مسئله‌ی تدریس است نه مسئله‌ی افراد.'}
-          </p>
-          <ul className="gap-list">
-            {rows.map((r) => (
-              <li key={r.id}>
-                <header>
-                  <strong>{memberName[r.memberId] ?? r.memberId}</strong>
-                  <span className="gap-team">{teamName[r.teamId]}</span>
-                  <span className="tnum">هفته‌ی {faDigits(r.weekId)}</span>
-                  {r.defence?.outcome && r.defence.outcome !== 'absent' && (
-                    <span className={`outcome-tag out-${r.defence.outcome}`}>
-                      {OUTCOME[r.defence.outcome]?.label}
-                    </span>
-                  )}
-                </header>
-                <p>{r.gap}</p>
-                {r.defence?.question && <em className="gap-q">سؤال: «{r.defence.question}»</em>}
-              </li>
-            ))}
-          </ul>
-        </>
+        <ol className="drill-weeks">
+          {summary.byWeek.map((point) => (
+            <li key={point.weekId}>
+              <span className="drill-week">هفته‌ی {faDigits(point.weekId)}</span>
+              <b>{faDigits(point.value)}</b>
+              <span className="drill-raters">
+                {point.raters.map((r) => (
+                  <i key={r.author} className={`rater role-${r.mentorRole}`}>
+                    {ROLE[r.mentorRole] ?? r.mentorRole} {r.rating === 'NOT_OBSERVED' ? '—' : faDigits(r.rating)}
+                  </i>
+                ))}
+              </span>
+            </li>
+          ))}
+        </ol>
       )}
-    </div>
+
+      {notes.length > 0 && (
+        <ul className="drill-notes">
+          {notes.map((r) => (
+            <li key={r.id}>
+              <span className="drill-week">
+                هفته‌ی {faDigits(r.weekId)} · {ROLE[r.mentorRole] ?? r.mentorRole}
+              </span>
+              <p>{r.note}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
-export default function LearningView({ teams, axes, weeks, evaluations }) {
-  const [tab, setTab] = useState('gaps');
+export default function LearningView({ board, weekId }) {
+  const [view, setView] = useState('people');
+  const [open, setOpen] = useState(null);
+  const rows = board.assessments ?? [];
+  const competencies = (board.competencies ?? []).filter((c) => !c.archived);
+  const teams = board.teams;
 
-  const covered = useMemo(() => {
-    const people = teams.reduce((n, t) => n + t.members.length, 0);
-    const active = weeks.find((w) => w.status === 'active');
-    if (!active) return null;
-    const done = new Set(
-      evaluations.filter((e) => e.weekId === active.id).map((e) => e.memberId),
-    ).size;
-    return { done, people, weekId: active.id };
-  }, [teams, weeks, evaluations]);
+  const people = teams.flatMap((t) => t.members);
+  const done = new Set(
+    submitted(rows).filter((r) => r.weekId === weekId).map((r) => r.memberId),
+  );
+
+  const views = [
+    { id: 'people', label: 'وضعیت افراد' },
+    { id: 'attention', label: 'نیازمند توجه' },
+  ];
 
   return (
     <section className="staff-card learning">
       <header className="staff-card-head">
-        <h3>ارزیابی یادگیری</h3>
-        {covered && (
-          <span className="staff-note">
-            هفته‌ی {faDigits(covered.weekId)}: {faDigits(covered.done)} از {faDigits(covered.people)} نفر ارزیابی شده‌اند
-          </span>
-        )}
+        <h3>مشاهده‌های ثبت‌شده</h3>
+        <span className="staff-note">
+          هفته‌ی {faDigits(weekId)}: {faDigits(done.size)} از {faDigits(people.length)} نفر مشاهده شده‌اند
+        </span>
       </header>
 
       <div className="learn-tabs" role="group" aria-label="نما">
-        {[
-          ['gaps', 'چه چیزی جا نیفتاد'],
-          ['people', 'پیشرفت افراد'],
-          ['axes', 'مقایسه‌ی تیم‌ها'],
-        ].map(([id, label]) => (
-          <button key={id} type="button" className={`learn-tab ${tab === id ? 'on' : ''}`} onClick={() => setTab(id)}>
-            {label}
+        {views.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            className={`learn-tab ${view === v.id ? 'on' : ''}`}
+            onClick={() => setView(v.id)}
+          >
+            {v.label}
           </button>
         ))}
       </div>
 
-      {tab === 'gaps' && <GapBoard teams={teams} evaluations={evaluations} weeks={weeks} />}
-      {tab === 'people' && <PersonHeat teams={teams} weeks={weeks} evaluations={evaluations} />}
-      {tab === 'axes' && <AxisCompare teams={teams} axes={axes} evaluations={evaluations} />}
+      {view === 'people' && (
+        <Heat teams={teams} competencies={competencies} rows={rows} onOpen={setOpen} />
+      )}
+      {view === 'attention' && <Attention teams={teams} competencies={competencies} rows={rows} />}
+
+      <Drill open={open} rows={rows} onClose={() => setOpen(null)} />
     </section>
   );
 }

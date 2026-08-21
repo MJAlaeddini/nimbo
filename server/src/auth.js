@@ -76,7 +76,8 @@ export function login(user, password) {
       ? matchesHash(password, ADMIN_PASSWORD_HASH)
       : Boolean(ADMIN_PASSWORD) && safeEqual(password, ADMIN_PASSWORD);
     if (!okAdmin) return null;
-    return { token: signToken({ user: name, role: 'admin', teamId: null }), me: { user: name, name: 'ادمین', role: 'admin', teamId: null } };
+    const adminClaims = { user: name, role: 'admin', mentorRole: null, teamId: null };
+    return { token: signToken(adminClaims), me: { ...adminClaims, name: 'ادمین' } };
   }
 
   const account = findAccount(name);
@@ -84,7 +85,15 @@ export function login(user, password) {
   const secret = staffSecret(account);
   if (!secret || !safeEqual(password, secret)) return null;
 
-  const claims = { user: account.user, role: account.role, teamId: account.teamId ?? null, id: account.id };
+  const claims = {
+    user: account.user,
+    role: account.role,
+    // نقشِ مشاهده روی خودِ نشست می‌نشیند، تا هر ردیفی که این نفر ثبت می‌کند نقشش را از
+    // حساب بگیرد و نه از body درخواست.
+    mentorRole: account.mentorRole ?? null,
+    teamId: account.teamId ?? null,
+    id: account.id,
+  };
   return { token: signToken(claims), me: { ...claims, name: account.name } };
 }
 
@@ -112,8 +121,20 @@ export function requireRole(...roles) {
   };
 }
 
-// A mentor writes about their own team and nobody else's; a lead or the admin writes anywhere.
+// چه کسی درباره‌ی کدام تیم می‌نویسد.
+//
+// منتور تیم فقط تیم خودش · منتور اصلی همه‌ی تیم‌ها (§۳: continuity در کل دوره) · ناظر ارشد
+// فقط جلسه‌ای که برایش assign شده، پس این‌جا جواب «نه» است و اجازه‌اش را
+// `observerAllowed` جداگانه می‌دهد — چون به هفته هم وابسته است، نه فقط به تیم.
 export function ownsTeam(staff, teamId) {
   if (staff.role === 'admin' || staff.role === 'lead') return true;
+  if (staff.mentorRole === 'core_mentor') return Boolean(teamId);
+  if (staff.mentorRole === 'senior_observer') return false;
   return Boolean(teamId) && staff.teamId === teamId;
+}
+
+// اجازه‌ی نوشتن روی یک جلسه‌ی مشخص (هفته × تیم). فقط این تابع ناظر ارشد را راه می‌دهد.
+export function canAssess(staff, teamId, weekId, isObserverAssigned) {
+  if (staff.mentorRole === 'senior_observer') return isObserverAssigned(staff.user, weekId, teamId);
+  return ownsTeam(staff, teamId);
 }

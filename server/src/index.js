@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import express from 'express';
-import { credentialsConfigured, login, ownsTeam, requireAdmin, requireRole, staffConfigured } from './auth.js';
+import { canAssess, credentialsConfigured, login, ownsTeam, requireAdmin, requireRole, staffConfigured } from './auth.js';
 import { fullRoadmap, publicRoadmap } from './public.js';
 import { listBackups, snapshotNow, startDailyBackups } from './backup.js';
 import { SHEETS } from './sheets.js';
@@ -99,20 +99,17 @@ const denied = (res) => res.status(403).json({ error: 'forbidden' });
 
 app.get('/api/staff/board', staffOnly, (req, res) => res.json(staffBoard(req.staff)));
 
+// یک مشاهده. `mentorRole` عمداً از req.staff می‌آید و نه از body — اگر از body می‌آمد،
+// یک منتور تیم می‌توانست رأیش را با برچسب ناظر ارشد ثبت کند.
 app.put('/api/staff/assessments', staffOnly, (req, res) => {
-  const { teamId, weekId, scores, note } = req.body ?? {};
-  if (!ownsTeam(req.staff, teamId)) return denied(res);
-  return ok(res, store.saveAssessment(teamId, weekId, { scores, note }, req.staff.user));
-});
-
-app.put('/api/staff/evaluations', staffOnly, (req, res) => {
-  // Ownership is resolved from where the person actually is, not from a teamId the caller
-  // sent, and it is checked before anything is written — a 403 after a successful save
-  // would still have saved it.
+  // مالکیت از روی جایی که نفر واقعاً هست حساب می‌شود، نه از teamId ای که فرستنده گفته، و
+  // قبل از هر نوشتنی چک می‌شود — ۴۰۳ بعد از یک ذخیره‌ی موفق، ذخیره‌اش را پس نمی‌گیرد.
   const teamId = store.memberTeamId(req.body?.memberId);
   if (!teamId) return res.status(400).json({ error: 'unknown member' });
-  if (!ownsTeam(req.staff, teamId)) return denied(res);
-  return ok(res, store.saveEvaluation(req.body ?? {}, req.staff.user));
+  if (!canAssess(req.staff, teamId, req.body?.weekId, store.observerAssignedTo)) return denied(res);
+
+  const saved = store.saveAssessment(req.body ?? {}, req.staff);
+  return saved ? res.json(saved) : res.status(400).json({ error: 'bad assessment' });
 });
 
 app.post('/api/staff/observations', staffOnly, (req, res) => {
@@ -161,7 +158,7 @@ app.get('/api/staff/export/:kind.csv', leadOnly, (req, res) => {
   const csv = sheet.build({
     teams: store.listTeams(),
     accounts: store.listAccounts(),
-    axes: store.listAxes(),
+    competencies: store.listCompetencies(),
     assessments: store.listAssessments(),
     observations: store.listObservations(),
     hints: store.listHints(),
@@ -193,22 +190,32 @@ app.post('/api/staff/teams/:id/members', leadOnly, (req, res) => {
 
 app.delete('/api/staff/members/:id', leadOnly, (req, res) => ok(res, store.removeMember(req.params.id)));
 
-const axisGroup = (kind) => (kind === 'traits' || kind === 'metrics' ? kind : null);
-
-// Renaming an axis keeps its id, so every score already given against it survives the rename.
-app.patch('/api/staff/axes/:kind/:id', leadOnly, (req, res) => {
-  const { kind, id } = req.params;
-  if (!axisGroup(kind)) return res.status(400).json({ error: 'unknown axis group' });
-  if (typeof req.body?.archived === 'boolean') return ok(res, store.archiveAxis(kind, id, req.body.archived));
-  return ok(res, store.renameAxis(kind, id, req.body?.label));
+// ویرایش یک معیار شناسه‌اش را عوض نمی‌کند، پس هر ratingی که تا حالا به آن داده شده
+// سر جایش می‌ماند.
+app.patch('/api/staff/competencies/:id', leadOnly, (req, res) => {
+  if (typeof req.body?.archived === 'boolean') {
+    return ok(res, store.archiveCompetency(req.params.id, req.body.archived));
+  }
+  return ok(res, store.updateCompetency(req.params.id, req.body ?? {}));
 });
 
-app.post('/api/staff/axes/:kind', leadOnly, (req, res) => {
-  const { kind } = req.params;
-  if (!axisGroup(kind)) return res.status(400).json({ error: 'unknown axis group' });
-  const axis = store.addAxis(kind, req.body ?? {});
-  return axis ? res.status(201).json(axis) : res.status(400).json({ error: 'an axis needs a label' });
+app.post('/api/staff/competencies', leadOnly, (req, res) => {
+  const competency = store.addCompetency(req.body ?? {});
+  return competency
+    ? res.status(201).json(competency)
+    : res.status(400).json({ error: 'a competency needs a label and four described levels' });
 });
+
+// --- assign کردن ناظر ارشد به یک جلسه --------------------------------------
+
+app.post('/api/staff/observer-assignments', leadOnly, (req, res) => {
+  const assignment = store.addObserverAssignment(req.body ?? {});
+  return assignment ? res.status(201).json(assignment) : res.status(400).json({ error: 'bad assignment' });
+});
+
+app.delete('/api/staff/observer-assignments/:id', leadOnly, (req, res) =>
+  ok(res, store.removeObserverAssignment(req.params.id)),
+);
 
 // --- admin -------------------------------------------------------------------
 
