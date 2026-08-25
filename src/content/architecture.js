@@ -17,7 +17,7 @@
 export const ARCH_TEXT = {
   lanes: {
     direct: 'مسیر دوم',
-    batch: 'Batch Path',
+    batch: 'مسیر اول',
   },
   cluster: 'کلاستر',
   legend: {
@@ -45,7 +45,7 @@ export const ARCH_NODES = [
   { id: 'cube', kind: 'service', label: 'Cube Maker', sub: 'Spark', x: 425, y: 285, w: 155, h: 78, week: 2, until: 3, lane: 'batch', autoWeek: 7 },
   { id: 'postgres', kind: 'store', label: 'PostgreSQL', sub: 'Aggregates', x: 230, y: 285, w: 155, h: 78, week: 3, lane: 'batch', autoWeek: 6 },
 
-  { id: 'api', kind: 'service', label: 'REST API', sub: 'Both paths', x: 40, y: 160, w: 150, h: 90, week: 4, autoWeek: 7 },
+  { id: 'api', kind: 'service', label: 'REST API', sub: 'Both paths', x: 40, y: 160, w: 150, h: 90, week: 3, autoWeek: 7 },
 ];
 
 export const ARCH_EDGES = [
@@ -56,8 +56,8 @@ export const ARCH_EDGES = [
   { from: 'srWriter', to: 'starrocks', week: 2, until: 3, lane: 'direct' },
   { from: 'hdfs', to: 'cube', week: 2, until: 3, lane: 'batch' },
   { from: 'cube', to: 'postgres', week: 3, lane: 'batch' },
-  { from: 'starrocks', to: 'api', week: 4, lane: 'direct' },
-  { from: 'postgres', to: 'api', week: 4, lane: 'batch' },
+  { from: 'starrocks', to: 'api', week: 3, lane: 'direct' },
+  { from: 'postgres', to: 'api', week: 3, lane: 'batch' },
 ];
 
 // From this week on the whole system lives inside a cluster. It adds no box — it changes what
