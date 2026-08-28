@@ -16,6 +16,7 @@ import Roadmap from '../components/Roadmap';
 import Syllabus from '../components/Syllabus';
 import Teams from '../components/Teams';
 import WeekRhythm from '../components/WeekRhythm';
+import TalksPage from './TalksPage';
 
 // One address for the whole programme. Phase zero and the nine weeks are two tabs of the
 // same page, not two places — switching is a click, never a navigation.
@@ -118,10 +119,14 @@ export default function Phase0() {
               <Roadmap basePath="/phase-0" weeks={weeks} phases={phases} />
             </div>
           </section>
+
+          <div className="divider" />
+
+          <WeekRhythm />
         </>
       )}
 
-      {tab === 'rhythm' && <WeekRhythm />}
+      {tab === 'talks' && <TalksPage />}
 
       {tab === 'syllabus' && <Syllabus />}
 

@@ -101,17 +101,17 @@ export const PHASES = {
 
 export const ROADMAP_TEXT = {
   hero: {
-    eyebrow: 'هفته‌های پروژه',
-    eyebrowMono: 'PROJECT WEEKS',
+    eyebrow: 'مأموریت‌ها',
+    eyebrowMono: 'PROJECT MISSIONS',
     code: 'NETFLOW PLATFORM · 9 WEEKS',
-    title: 'هفته‌های',
+    title: 'مأموریت‌های',
     titleAccent: 'پروژه',
     tagline: 'نُه هفته روی یه پروژه‌ی واحد. هر هفته یه تکه‌ی تازه از معماری رو زنده می‌کنه و روی هفته‌ی قبل سوار می‌شه.',
   },
   tabs: {
     phase0: 'فاز صفر',
-    roadmap: 'هفته‌های پروژه',
-    rhythm: 'برنامه‌ی هفتگی',
+    roadmap: 'مأموریت‌ها',
+    talks: 'گفت‌وگوی تخصصی',
     syllabus: 'ارائه‌ی فنی',
     teams: 'تیم‌ها',
   },

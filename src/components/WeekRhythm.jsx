@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { RHYTHM, RHYTHM_TEXT } from '../content/rhythm';
 import { faDigits } from '../lib/time';
 import { BoltIcon, CheckIcon, FlagIcon, LockIcon, SparkIcon } from './icons';
@@ -33,87 +32,72 @@ export default function WeekRhythm() {
   const [openId, setOpen] = useState(() => today ?? upNext ?? RHYTHM[0].id);
 
   return (
-    <>
-      <section className="hero">
-        <div className="wrap inner">
-          <span className="eyebrow">
-            <span className="dot" /> {t.kicker} · <span className="mono">WEEKLY RHYTHM</span>
-          </span>
-          <h1 className="display">
-            برنامه‌ی <b>هفتگی</b>
-          </h1>
-          <p className="tagline">{t.note}</p>
+    <section className="block" id="rhythm">
+      <div className="wrap">
+        <div className="sec-head">
+          <span className="sec-kicker">{t.kicker}</span>
+          <h2 className="sec-title">{t.title}</h2>
         </div>
-      </section>
+        <p className="sec-note" style={{ marginBottom: 26 }}>
+          {t.note}
+        </p>
 
-      <div className="divider" />
-
-      <section className="block" id="rhythm">
-        <div className="wrap">
-          <ol className="rhythm">
-            {RHYTHM.map((day, i) => {
-              const Mark = MARK[day.kind] ?? FlagIcon;
-              const isToday = day.id === today;
-              const isNext = day.id === upNext;
-              const open = day.id === openId;
-              return (
-                <li key={day.id} className={`rh-day kind-${day.kind} ${open ? 'open' : ''} ${isToday ? 'today' : ''}`}>
-                  <button
-                    type="button"
-                    className="rh-head"
-                    aria-expanded={open}
-                    aria-controls={`rh-${day.id}`}
-                    onClick={() => setOpen(open ? null : day.id)}
-                  >
-                    <span className="rh-rail" aria-hidden="true">
-                      <span className="rh-dot">
-                        <Mark size={13} />
-                      </span>
-                      {i < RHYTHM.length - 1 && <span className="rh-line" />}
+        <ol className="rhythm">
+          {RHYTHM.map((day, i) => {
+            const Mark = MARK[day.kind] ?? FlagIcon;
+            const isToday = day.id === today;
+            const isNext = day.id === upNext;
+            const open = day.id === openId;
+            return (
+              <li key={day.id} className={`rh-day kind-${day.kind} ${open ? 'open' : ''} ${isToday ? 'today' : ''}`}>
+                <button
+                  type="button"
+                  className="rh-head"
+                  aria-expanded={open}
+                  aria-controls={`rh-${day.id}`}
+                  onClick={() => setOpen(open ? null : day.id)}
+                >
+                  <span className="rh-rail" aria-hidden="true">
+                    <span className="rh-dot">
+                      <Mark size={13} />
                     </span>
+                    {i < RHYTHM.length - 1 && <span className="rh-line" />}
+                  </span>
 
-                    <span className="rh-id">
-                      <span className="rh-day-name">
-                        {day.day}
-                        {isToday && <em className="rh-flag now">{t.todayLabel}</em>}
-                        {isNext && <em className="rh-flag next">{t.nextLabel}</em>}
-                      </span>
-                      <strong className="rh-title">{day.title}</strong>
-                      <span className="rh-lead">{day.lead}</span>
+                  <span className="rh-id">
+                    <span className="rh-day-name">
+                      {day.day}
+                      {isToday && <em className="rh-flag now">{t.todayLabel}</em>}
+                      {isNext && <em className="rh-flag next">{t.nextLabel}</em>}
                     </span>
+                    <strong className="rh-title">{day.title}</strong>
+                    <span className="rh-lead">{day.lead}</span>
+                  </span>
 
-                    <span className="rh-num tnum" aria-hidden="true">
-                      {faDigits(i + 1)}
-                    </span>
-                  </button>
+                  <span className="rh-num tnum" aria-hidden="true">
+                    {faDigits(i + 1)}
+                  </span>
+                </button>
 
-                  {open && (
-                    <div className="rh-body" id={`rh-${day.id}`}>
-                      <p>{day.body}</p>
-                      <p className="rh-bring">
-                        <span>{t.bringLabel}</span>
-                        {day.bring}
-                      </p>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
+                {open && (
+                  <div className="rh-body" id={`rh-${day.id}`}>
+                    <p>{day.body}</p>
+                    <p className="rh-bring">
+                      <span>{t.bringLabel}</span>
+                      {day.bring}
+                    </p>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
 
-          <div className="rh-rest">
-            <strong>{t.restTitle}</strong>
-            <p>{t.restNote}</p>
-          </div>
-
-          <div className="callout" style={{ marginTop: 26 }}>
-            <span className="ic">🎤</span>
-            <span>
-              برنامه و موضوعِ کاملِ گفت‌وگوهای تخصصیِ یکشنبه‌ها را در <Link to="/talks">صفحه‌ی گفت‌وگوی تخصصی</Link> ببینید.
-            </span>
-          </div>
+        <div className="rh-rest">
+          <strong>{t.restTitle}</strong>
+          <p>{t.restNote}</p>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 }
