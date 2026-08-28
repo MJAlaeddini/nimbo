@@ -28,6 +28,21 @@ export const WEEK_CONTENT = {
   4: {
     talk: { note: 'موضوع: StarRocks — مهمان: علیرضا مصلی‌نژاد' },
   },
+  5: {
+    talk: { note: 'موضوع: Kubernetes' },
+  },
+  6: {
+    talk: { note: 'موضوع: Debugging مؤثر و ریشه‌یابی مشکل' },
+  },
+  7: {
+    talk: { note: 'موضوع: بدهی فنی و چطور بازپرداختش کنیم' },
+  },
+  8: {
+    talk: { note: 'موضوع: Observability و نوشتن گزارش خوب از یک رفتار غیرعادی' },
+  },
+  9: {
+    talk: { note: 'موضوع: توضیح‌دادن Trade-off به‌جای دفاع از تصمیم' },
+  },
 };
 
 export function getWeekContent(weekNumber, eventKey) {

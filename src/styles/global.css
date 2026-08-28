@@ -821,6 +821,13 @@ footer p{color:var(--lav-dim);font-size:.82rem;margin-top:14px}
 .rp-milestone-kicker{display:inline-flex;align-items:center;gap:7px;color:var(--gold);font-size:.72rem;font-weight:700;letter-spacing:1.2px}
 .rp-milestone strong{color:var(--ink);font-size:1rem}
 .rp-milestone p{margin:0;color:var(--lav);font-size:.9rem;line-height:1.8}
+
+.rp-quiz{margin-top:16px;border:1px solid rgba(245,166,35,.3);border-radius:14px;background:linear-gradient(180deg,rgba(245,166,35,.07),transparent);overflow:hidden}
+.rp-quiz-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:none;border:0;color:var(--gold-lit);font:inherit;font-weight:700;font-size:.92rem;text-align:right;cursor:pointer}
+.rp-quiz-chev{color:var(--gold);font-size:1.1rem;line-height:1}
+.rp-quiz-list{margin:0 18px 16px;padding-inline-start:22px;color:var(--ink)}
+.rp-quiz-list li{margin:9px 0;font-size:.92rem;line-height:1.8}
+.rp-quiz-list li::marker{color:var(--gold)}
 .rp-deliverable{margin-top:28px;padding:20px 22px;border:1px solid rgba(245,166,35,.34);border-radius:15px;background:linear-gradient(150deg,rgba(245,166,35,.13),rgba(100,28,140,.13));box-shadow:0 18px 40px -30px rgba(245,166,35,.85)}
 .rp-deliverable-label{display:block;margin-bottom:7px;color:var(--gold);font-size:.72rem;font-weight:700;letter-spacing:2px}
 .rp-deliverable p{color:var(--ink);font-size:1rem;line-height:1.85}
