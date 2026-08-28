@@ -110,12 +110,12 @@ export const ROADMAP_TEXT = {
   },
   tabs: {
     phase0: 'فاز صفر',
-    roadmap: 'نقشه‌ی بوت‌کمپ',
+    roadmap: 'هفته‌های پروژه',
     rhythm: 'برنامه‌ی هفتگی',
-    syllabus: 'سرفصل ارائه‌ی تیمی',
+    syllabus: 'کارگاه تیمی',
     teams: 'تیم‌ها',
   },
-  kicker: 'ROADMAP',
+  kicker: 'WEEKS',
   title: 'نُه هفته‌ی بوت‌کمپ',
   note: 'روی هر هفته بزن تا مأموریتش و شکل معماری تا آخر اون هفته رو ببینی.',
   legendTitle: 'فازها',
@@ -155,7 +155,7 @@ export const weeks = [
   {
     id: 1,
     code: 'W1',
-    status: 'locked',
+    status: 'completed',
     phase: 'p1',
     title: 'از کافکا تا پارکت روی HDFS',
     summary: 'اولین قطعه‌ی واقعی پروژه — یه نویسنده‌ی پارکت که کل مسیر استقرارشم خودکار باشه.',
@@ -169,7 +169,7 @@ export const weeks = [
   {
     id: 2,
     code: 'W2',
-    status: 'locked',
+    status: 'completed',
     phase: 'p1',
     title: 'مسیر دوم و بلوغ ابزار',
     summary: 'یه صف، دو تا مقصد — و اولین باری که با Spark از داده‌ی خام سؤال می‌پرسید.',
@@ -183,7 +183,7 @@ export const weeks = [
   {
     id: 3,
     code: 'W3',
-    status: 'locked',
+    status: 'active',
     phase: 'p1',
     title: 'تموم‌کردن، و ایستادن جلوی سؤال',
     summary: 'دو تا مسیر باید کامل بشن — بعدش باید از تصمیم‌هاتون دفاع کنید.',

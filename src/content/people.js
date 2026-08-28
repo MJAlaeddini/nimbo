@@ -195,10 +195,10 @@ export const OBSERVER_PERSONAS = [{ id: 'p-mahdi-teymouri', name: 'مهدی تی
 export const TEAMS_TEXT = {
   kicker: 'TEAMS',
   title: 'تیم‌ها',
-  tagline: 'چهار تیم، سیزده نفر. هر تیم یک منتور دارد و دو ارائه در برنامه‌ی یکشنبه‌ها و سه‌شنبه‌ها.',
+  tagline: 'چهار تیم، سیزده نفر. هر تیم یک منتور دارد و دو کارگاه در برنامه‌ی یکشنبه‌ها و سه‌شنبه‌ها.',
   mentorLabel: 'منتور',
-  talksLabel: 'ارائه‌ها',
-  noTalks: 'هنوز ارائه‌ای برایش ثبت نشده.',
+  talksLabel: 'کارگاه‌ها',
+  noTalks: 'هنوز کارگاهی برایش ثبت نشده.',
 };
 
 export const STAFF_TEXT = {

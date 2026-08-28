@@ -2,7 +2,6 @@ import { Suspense, lazy, useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import TopBar from './components/TopBar';
 import Footer from './components/Footer';
-import Home from './pages/Home';
 import Phase0 from './pages/Phase0';
 import WeekPage from './pages/WeekPage';
 import TalksPage from './pages/TalksPage';
@@ -30,8 +29,8 @@ export default function App() {
       <TopBar />
       <Suspense fallback={null}>
         <Routes>
-          <Route path="/" element={<Home />} />
           {/* یک صفحه و یک آدرس: فاز صفر، صورت پروژه، و نُه هفته زیر هم. */}
+          <Route path="/" element={<Navigate to="/phase-0" replace />} />
           <Route path="/phase-0" element={<Phase0 />} />
           <Route path="/phase-0/:weekSlug" element={<Phase0 />} />
           {/* آدرس‌های قدیمیِ نقشه به همان صفحه برمی‌گردند. */}

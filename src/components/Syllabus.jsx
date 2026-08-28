@@ -89,10 +89,10 @@ export default function Syllabus() {
       <section className="hero" style={{ padding: '78px 0 48px' }}>
         <div className="wrap inner">
           <span className="eyebrow">
-            <span className="dot" /> یکشنبه‌ها · <span className="mono">{SYLLABUS_TEXT.kicker}</span>
+            <span className="dot" /> یکشنبه‌ها و سه‌شنبه‌ها · <span className="mono">{SYLLABUS_TEXT.kicker}</span>
           </span>
           <h1 className="display" style={{ fontSize: 'clamp(2.4rem,6.4vw,4.6rem)' }}>
-            سرفصل‌های <b>ارائه</b>
+            سرفصل‌های <b>کارگاه</b>
           </h1>
           <p className="tagline">{SYLLABUS_TEXT.tagline}</p>
         </div>
