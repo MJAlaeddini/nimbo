@@ -1,0 +1,155 @@
+# Deploy the alpha line to the same server as production, in its own directory, its own
+# docker compose project, and its own port — isolated from the production checkout,
+# containers, volume, and .env.
+#
+# Reuses production's SSH secrets (no new ones needed): the alpha checkout lives at a
+# different path on the same host, so the same key that can deploy production can bootstrap
+# and update alpha too. First run on the server clones the checkout and writes a fresh
+# alpha-only .env with generated passwords (printed once in this workflow's log); every run
+# after that reuses what is already there.
+#
+# See scripts/bootstrap-alpha.sh (first-run setup) and scripts/deploy.sh (the actual
+# update — the same script production uses, just pointed at the alpha directory).
+#
+# Needs, in the repository's Settings → Secrets and variables → Actions (shared with
+# deploy-server.yml):
+#
+#   secrets   SSH_HOST, SSH_USER, SSH_KEY, SSH_KNOWN_HOSTS (optional), SSH_PORT (optional)
+#
+#   variables DEPLOY_PATH_ALPHA  optional, the alpha checkout on the server, defaults to
+#                                ~/nimbo-alpha
+#             WEB_PORT_ALPHA     optional, the port alpha answers on, defaults to 8089
+#             COMPOSE_FILE_ALPHA optional, defaults to docker-compose.yml (the http setup,
+#                                same as production)
+
+name: Deploy to alpha
+
+on:
+  push:
+    branches: [claude/site-users-list-bqxg8j]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-alpha
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Build and check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build the front end
+        run: npm run build
+
+      - name: Install the api
+        working-directory: server
+        run: npm ci
+
+      - name: The api starts and answers
+        working-directory: server
+        env:
+          PORT: 8080
+          DATA_FILE: ${{ runner.temp }}/ci-roadmap.json
+        run: |
+          set -euo pipefail
+          node src/index.js &
+          api=$!
+          trap 'kill $api 2>/dev/null || true' EXIT
+          for _ in $(seq 1 20); do
+            curl -fsS http://127.0.0.1:8080/api/health && break || sleep 1
+          done
+          curl -fsS http://127.0.0.1:8080/api/health | tee /dev/stderr | grep -q '"status":"ok"'
+
+  deploy:
+    name: Deploy (alpha)
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up the ssh key
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+        run: |
+          set -euo pipefail
+          test -n "$SSH_KEY"  || { echo "::error::the SSH_KEY secret is empty"; exit 1; }
+          test -n "$SSH_HOST" || { echo "::error::the SSH_HOST secret is empty"; exit 1; }
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          if [ -n "$SSH_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            echo "::warning::SSH_KNOWN_HOSTS is not set, so this run trusts whichever host key answers. Set it with: ssh-keyscan -p $SSH_PORT <host>"
+            ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" > ~/.ssh/known_hosts 2>/dev/null
+          fi
+          chmod 600 ~/.ssh/known_hosts
+          test -s ~/.ssh/known_hosts || { echo "::error::no host key for $SSH_HOST:$SSH_PORT"; exit 1; }
+
+      - name: Bootstrap the alpha checkout
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+          DEPLOY_PATH_ALPHA: ${{ vars.DEPLOY_PATH_ALPHA || '~/nimbo-alpha' }}
+          WEB_PORT_ALPHA: ${{ vars.WEB_PORT_ALPHA || '8089' }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}.git
+        run: |
+          set -euo pipefail
+          # Same stdin-closing shape as the deploy step below, and for the same reason:
+          # the script that runs must be the one from this commit, never a stale copy left
+          # on the server, and stdin must not carry anything the remote shell could read.
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" \
+              -o StrictHostKeyChecking=yes \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              -o ConnectTimeout=15 \
+              "$SSH_USER@$SSH_HOST" \
+              "tmp=\$(mktemp /tmp/nimbo-bootstrap-alpha.XXXXXX.sh) && cat > \"\$tmp\" && bash \"\$tmp\" '$DEPLOY_PATH_ALPHA' '$WEB_PORT_ALPHA' '$REPO_URL' </dev/null; rc=\$?; rm -f \"\$tmp\"; exit \$rc" \
+              < scripts/bootstrap-alpha.sh
+
+      - name: Run the deploy
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH_ALPHA || '~/nimbo-alpha' }}
+          COMPOSE_FILE: ${{ vars.COMPOSE_FILE_ALPHA || 'docker-compose.yml' }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" \
+              -o StrictHostKeyChecking=yes \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              -o ConnectTimeout=15 \
+              "$SSH_USER@$SSH_HOST" \
+              "tmp=\$(mktemp /tmp/nimbo-deploy-alpha.XXXXXX.sh) && cat > \"\$tmp\" && APP_DIR=\"$DEPLOY_PATH\" COMPOSE_FILE='$COMPOSE_FILE' bash \"\$tmp\" '$GITHUB_SHA' </dev/null; rc=\$?; rm -f \"\$tmp\"; exit \$rc" \
+              < scripts/deploy.sh | tee deploy.log
+
+          grep -qx "DEPLOY_OK $GITHUB_SHA" deploy.log || {
+            echo "::error::the alpha deploy did not run to completion — no DEPLOY_OK for $GITHUB_SHA"
+            exit 1
+          }
+
+      - name: Remove the key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
