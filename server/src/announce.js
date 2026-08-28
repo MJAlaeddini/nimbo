@@ -150,6 +150,12 @@ function challengeOpen(assignment, challenge) {
   return lines.join('\n');
 }
 
+// What the ledger already holds. Read-only, for the preview script — so a preview can say
+// which of the messages it is showing would actually go out, and which the bot has sent.
+export function alreadySent() {
+  return new Set(readLedger()?.sent ?? []);
+}
+
 // --- what is due right now ----------------------------------------------------
 //
 // Pure: takes the clock and the world, returns messages. Everything about timing can be
