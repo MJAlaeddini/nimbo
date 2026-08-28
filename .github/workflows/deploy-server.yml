@@ -93,8 +93,13 @@ jobs:
           cp -r server/node_modules "$stage"/ 2>/dev/null || true
           cd "$stage"
           DATA_FILE="${{ runner.temp }}/scripts-check.json" node scripts/bale-preview.mjs > /dev/null
-          node scripts/bale-chats.mjs 2>&1 | grep -q 'set BALE_BOT_TOKEN first'
-          node scripts/bale-say.mjs   2>&1 | grep -q 'must both be set'
+          # These two report a missing token and exit non-zero by design, so their output is
+          # captured before it is checked — under pipefail a `| grep` would fail the step on
+          # the script's own exit code no matter what it printed.
+          chats=$(node scripts/bale-chats.mjs 2>&1 || true)
+          say=$(node scripts/bale-say.mjs 2>&1 || true)
+          grep -q 'set BALE_BOT_TOKEN first' <<< "$chats"
+          grep -q 'must both be set' <<< "$say"
 
       # The seed is generated from src/content and committed. If someone edits the weeks
       # and forgets to regenerate it, the server would come up with the old text and no
