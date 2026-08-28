@@ -110,11 +110,11 @@ export default function MentalModels() {
     <div className="mm-grid">
       <figure>
         <KafkaModel />
-        <figcaption>بعد از کارگاه Kafka، شنونده باید بتواند این شکل را از حفظ بکشد.</figcaption>
+        <figcaption>بعد از ارائه‌ی Kafka، شنونده باید بتواند این شکل را از حفظ بکشد.</figcaption>
       </figure>
       <figure>
         <KubernetesModel />
-        <figcaption>بعد از کارگاه Kubernetes، شنونده باید بتواند این شکل را از حفظ بکشد.</figcaption>
+        <figcaption>بعد از ارائه‌ی Kubernetes، شنونده باید بتواند این شکل را از حفظ بکشد.</figcaption>
       </figure>
     </div>
   );

@@ -67,6 +67,21 @@ export default function Phase0() {
 
       {tab === 'roadmap' && (
         <>
+          <section className="hero" style={{ padding: '78px 0 48px' }}>
+            <div className="wrap inner">
+              <span className="eyebrow">
+                <span className="dot" /> {ROADMAP_TEXT.hero.eyebrow} · <span className="mono">{ROADMAP_TEXT.hero.eyebrowMono}</span>
+              </span>
+              <div className="phase-num mono">{ROADMAP_TEXT.hero.code}</div>
+              <h1 className="display" style={{ fontSize: 'clamp(2.4rem,6.4vw,4.6rem)' }}>
+                {ROADMAP_TEXT.hero.title} <b>{ROADMAP_TEXT.hero.titleAccent}</b>
+              </h1>
+              <p className="tagline">{ROADMAP_TEXT.hero.tagline}</p>
+            </div>
+          </section>
+
+          <div className="divider" />
+
           <section className="block" id="brief">
             <div className="wrap">
               <div className="sec-head">

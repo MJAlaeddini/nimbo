@@ -92,7 +92,7 @@ export default function Syllabus() {
             <span className="dot" /> یکشنبه‌ها و سه‌شنبه‌ها · <span className="mono">{SYLLABUS_TEXT.kicker}</span>
           </span>
           <h1 className="display" style={{ fontSize: 'clamp(2.4rem,6.4vw,4.6rem)' }}>
-            سرفصل‌های <b>کارگاه</b>
+            ارائه‌ی <b>فنی</b>
           </h1>
           <p className="tagline">{SYLLABUS_TEXT.tagline}</p>
         </div>
