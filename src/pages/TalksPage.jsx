@@ -58,12 +58,12 @@ export default function TalksPage() {
 
   return (
     <>
-      <section className="hero" style={{ padding: '84px 0 54px' }}>
+      <section className="hero">
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> یکشنبه‌ها · <span className="mono">EXPERT TALK</span>
           </span>
-          <h1 className="display" style={{ fontSize: 'clamp(2.6rem,7vw,5rem)' }}>
+          <h1 className="display">
             گفت‌وگوی <b>تخصصی</b>
           </h1>
           <p className="tagline">

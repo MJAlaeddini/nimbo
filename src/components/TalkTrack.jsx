@@ -31,10 +31,7 @@ export default function TalkTrack() {
             )}
             <div className="tr-stop">
               <span className="tr-ring">
-                {/* همان دو کمانِ نشانِ Nimbo که روی نقشه هم هست */}
                 <svg viewBox="0 0 48 48" aria-hidden="true">
-                  <path className="tr-arc" d="M10 16 A16 16 0 0 1 38 16" fill="none" strokeWidth="2.2" strokeLinecap="round" />
-                  <path className="tr-arc" d="M10 32 A16 16 0 0 0 38 32" fill="none" strokeWidth="2.2" strokeLinecap="round" />
                   <circle className="tr-ring-accent" cx="24" cy="24" r="15" fill="none" strokeWidth="1.8" />
                 </svg>
                 <span className="tr-mark tnum">{faDigits(slot.n)}</span>

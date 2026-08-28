@@ -57,7 +57,7 @@ export default function WeekPage() {
             <span className="dot" /> برنامه‌ی هفته‌ها · <span className="mono">WEEK {faDigits(weekNumber)}</span>
           </span>
           <div className="phase-num mono">شروع از {startLabel}</div>
-          <h1 className="display" style={{ fontSize: 'clamp(2.6rem,7vw,5rem)' }}>
+          <h1 className="display">
             هفته‌ی <b>{faDigits(weekNumber)}</b>
           </h1>
           {theme && <p className="tagline">{theme}</p>}

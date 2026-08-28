@@ -30,7 +30,6 @@ h2.sec-title{font-size:clamp(1.7rem,4vw,2.6rem);font-weight:800;letter-spacing:-
 .brand{display:flex;align-items:center;gap:12px;font-weight:700;flex:0 0 auto;text-decoration:none}
 .brand .lockup{font-size:1.15rem;letter-spacing:.5px;color:var(--gold)}
 .brand .sub{font-size:.72rem;color:var(--lav);font-weight:400}
-.nimbo-ring{width:34px;height:34px;flex:0 0 auto}
 nav.mainnav{display:flex;gap:4px;flex:1;overflow-x:auto;scrollbar-width:none}
 /* روی موبایل، پنج تب در یک نوار افقیِ اسکرول‌دار جا می‌شوند ولی فقط دوتاشان دیده
    می‌شوند و چون اسکرول‌بار پنهان است هیچ نشانه‌ای هم ندارد که بقیه‌ای هست.
@@ -45,8 +44,9 @@ nav.mainnav a:hover{color:var(--ink);background:rgba(182,154,214,.08)}
 nav.mainnav a.active{color:var(--ink);background:rgba(245,166,35,.14)}
 /* hero */
 .hero{position:relative;padding:104px 0 68px;overflow:hidden}
-.hero .bigring{position:absolute;top:50%;left:50%;translate:-50% -50%;width:min(760px,120vw);height:min(760px,120vw);z-index:0;opacity:.5;animation:spin 90s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+.hero::before,.hero::after{content:"";position:absolute;z-index:0;border-radius:50%;filter:blur(70px);pointer-events:none}
+.hero::before{top:-18%;left:-10%;width:480px;height:480px;background:radial-gradient(circle, rgba(245,166,35,.20), transparent 70%)}
+.hero::after{bottom:-28%;right:-12%;width:560px;height:560px;background:radial-gradient(circle, rgba(138,52,192,.26), transparent 70%)}
 .hero .inner{position:relative;z-index:1}
 .eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:.86rem;letter-spacing:1px;color:var(--gold);border:1px solid var(--line-strong);border-radius:999px;padding:7px 16px;margin-bottom:26px}
 .eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold);animation:pulse 2.4s ease-in-out infinite}
@@ -163,7 +163,7 @@ footer p{color:var(--lav-dim);font-size:.82rem;margin-top:14px}
   .m-head{flex-wrap:wrap}
   .m-state .lbl{display:none}
 }
-@media (prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto}.hero .bigring{animation:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto}}
 
 /* roadmap grid (home) */
 .roadmap-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
@@ -758,26 +758,23 @@ footer p{color:var(--lav-dim);font-size:.82rem;margin-top:14px}
 .rp-ring{position:relative;width:50px;height:50px;display:grid;place-items:center;flex:0 0 auto}
 .rp-ring::before{content:"";position:absolute;inset:2px;border-radius:50%;background:radial-gradient(circle at 50% 35%,var(--panel),var(--void-2) 70%);border:1px solid var(--line);transition:box-shadow .3s,border-color .3s}
 .rp-ring>svg{position:absolute;inset:0;width:100%;height:100%}
-.rp-arc{stroke:var(--ring);opacity:.9}
 .rp-ring-accent{stroke:transparent;transition:stroke .3s,opacity .3s}
 .rp-mark{position:relative;display:grid;place-items:center;color:var(--gold)}
 .rp-glyph{font-size:.95rem;font-weight:700}
 
-/* locked: nothing shouts — a dimmer ring, a hairline seal, a thin padlock */
-.status-locked .rp-arc{stroke:var(--lav-dim);opacity:.55}
+/* locked: nothing shouts — a dashed ring (from the badge background), a dim padlock */
 .status-locked .rp-ring::before{background:var(--void-2);border-style:dashed;border-color:rgba(182,154,214,.22)}
 .status-locked .rp-mark{color:var(--lav-dim)}
 .status-locked .rp-title{color:var(--lav-dim);font-weight:400}
 .status-locked .rp-code,.status-locked .rp-state{opacity:.75}
 /* upcoming: written and readable, but visibly not started — dimmer than active, alive unlike locked */
-.status-upcoming .rp-arc{stroke:var(--lav);opacity:.5}
 .status-upcoming .rp-ring::before{border-color:rgba(182,154,214,.28)}
 .status-upcoming .rp-mark{color:var(--lav)}
-.status-upcoming .rp-ring-accent{stroke:var(--phase-color);opacity:.28}
+.status-upcoming .rp-ring-accent{stroke:var(--phase-color);opacity:.5}
 .status-upcoming .rp-title{color:var(--lav)}
 .status-active .rp-ring-accent{stroke:var(--phase-color);opacity:.9}
 .status-active .rp-ring::before{border-color:rgba(245,166,35,.42);box-shadow:0 0 0 4px rgba(245,166,35,.08),0 0 24px rgba(245,166,35,.16)}
-.status-completed .rp-ring-accent{stroke:var(--phase-color);opacity:.4}
+.status-completed .rp-ring-accent{stroke:var(--phase-color);opacity:.55}
 .status-completed .rp-ring::before{background:linear-gradient(160deg,rgba(124,224,163,.15),var(--void-2))}
 .status-completed .rp-mark{color:var(--ok)}
 .rp-item.selected .rp-ring::before{border-color:rgba(245,166,35,.6);box-shadow:0 0 0 5px rgba(245,166,35,.14)}

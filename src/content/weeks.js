@@ -10,23 +10,23 @@
 //   theme: 'راه‌اندازی اسکلت سرویس',
 //   mission: { note: 'توضیح مأموریت هفته‌ی اول اینجا می‌آید.' },
 //   challenge: { note: 'توضیح چالش هفته‌ی اول اینجا می‌آید.' },
-//   talk: { note: 'موضوع: Code Review — ارائه‌دهنده: ...' },
+//   talk: { note: 'موضوع: Code Review — مهمان: ...' },
 //   mentorDemo: { note: 'ساعت و لینک دموی منتور.' },
 //   teamDemo: { note: 'ساعت و لینک دموی مشترک.' },
 // },
 
 export const WEEK_CONTENT = {
   1: {
-    talk: { note: 'موضوع: Clean Code و ریفکتورینگ' },
+    talk: { note: 'موضوع: Clean Code و ریفکتورینگ — مهمان: احمد حقوقی' },
   },
   2: {
-    talk: { note: 'موضوع: کدنویسی با کمک هوش مصنوعی' },
+    talk: { note: 'موضوع: کدنویسی با کمک هوش مصنوعی — مهمان: سیدمحمد غفاریان' },
   },
   3: {
-    talk: { note: 'موضوع: Code Review' },
+    talk: { note: 'موضوع: Code Review — مهمان: محمدعلی بزرگ‌زاده' },
   },
   4: {
-    talk: { note: 'موضوع: StarRocks' },
+    talk: { note: 'موضوع: StarRocks — مهمان: علیرضا مصلی‌نژاد' },
   },
 };
 

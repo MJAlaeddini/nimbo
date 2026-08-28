@@ -18,14 +18,12 @@ function talksOf(teamId) {
 export default function Teams() {
   return (
     <>
-      <section className="hero" style={{ padding: '78px 0 48px' }}>
+      <section className="hero">
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> <span className="mono">{TEAMS_TEXT.kicker}</span>
           </span>
-          <h1 className="display" style={{ fontSize: 'clamp(2.4rem,6.4vw,4.6rem)' }}>
-            {TEAMS_TEXT.title}
-          </h1>
+          <h1 className="display">{TEAMS_TEXT.title}</h1>
           <p className="tagline">{TEAMS_TEXT.tagline}</p>
         </div>
       </section>

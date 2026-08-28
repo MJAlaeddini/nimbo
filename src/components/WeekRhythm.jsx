@@ -34,12 +34,12 @@ export default function WeekRhythm() {
 
   return (
     <>
-      <section className="hero" style={{ padding: '78px 0 48px' }}>
+      <section className="hero">
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> {t.kicker} · <span className="mono">WEEKLY RHYTHM</span>
           </span>
-          <h1 className="display" style={{ fontSize: 'clamp(2.4rem,6.4vw,4.6rem)' }}>
+          <h1 className="display">
             برنامه‌ی <b>هفتگی</b>
           </h1>
           <p className="tagline">{t.note}</p>
