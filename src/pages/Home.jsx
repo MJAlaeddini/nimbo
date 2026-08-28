@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import phase0Raw from '../content/phase0.md?raw';
 import { parsePhaseMarkdown } from '../lib/markdown';
 import { PREVIEW_MODE } from '../config';
-import { WEEK_EVENTS } from '../content/schedule';
+import { PROJECT } from '../content/bootcamp';
 import { getWeekTheme } from '../content/weeks';
 import { useProgramOverview } from '../hooks/useProgramOverview';
 import { faDigits } from '../lib/time';
@@ -13,7 +13,7 @@ const PHASE0_STATUS_LABEL = { current: 'در حال اجرا', completed: 'تم�
 
 export default function Home() {
   const missions = useMemo(() => parsePhaseMarkdown(phase0Raw), []);
-  const { openCount, totalCount, countdownLabel, stageLabel, p0Status, weeks } = useProgramOverview(missions.length, PREVIEW_MODE);
+  const { stageLabel, p0Status, weeks } = useProgramOverview(missions.length, PREVIEW_MODE);
 
   return (
     <>
@@ -25,27 +25,37 @@ export default function Home() {
         </svg>
         <div className="wrap inner">
           <span className="eyebrow">
-            <span className="dot" /> نقشه‌ی راه · <span className="mono">PROGRAM MAP</span>
+            <span className="dot" /> نیمبو · <span className="mono">ENGINEERING BOOTCAMP</span>
           </span>
           <div className="phase-num mono">اکنون: {stageLabel}</div>
           <h1 className="display">
             مسیر <b>نیمبو</b>
           </h1>
-          <p className="tagline">فاز صفر تمام شد یا رو به اتمامه؛ از این‌جا ۹ هفته‌ی اصلی پروژه شروع می‌شه. هر هفته یک صفحه‌ی مستقل داره و تا روزش نرسه، جزئیاتش قفله.</p>
-          <div className="launch-status">
-            <div className="ls-block">
-              <span className="ls-label">مرحله‌ی باز</span>
-              <span className="ls-value gold tnum">{faDigits(openCount)} / {faDigits(totalCount)}</span>
-            </div>
-            <div className="ls-sep" />
-            <div className="ls-block">
-              <span className="ls-label">مرحله‌ی بعدی در</span>
-              <span className="ls-value tnum">{countdownLabel}</span>
-            </div>
-          </div>
+          <p className="tagline">
+            یک بوت‌کمپ مهندسی درون‌شرکتی: تیم‌های کوچیک، یک پروژه‌ی واقعی، و منتورهایی که کنارتون می‌مونن — از فاز صفر تا نُه هفته‌ی اصلی.
+          </p>
           <div className="dare mono">
             DARE&nbsp;TO&nbsp;<b>CHANGE</b>
           </div>
+        </div>
+      </section>
+
+      <div className="divider" />
+
+      <section className="block">
+        <div className="wrap">
+          <div className="sec-head">
+            <span className="sec-kicker">NIMBO</span>
+            <h2 className="sec-title">نیمبو چیه؟</h2>
+          </div>
+          <p className="sec-note" style={{ maxWidth: 720, marginBottom: 32 }}>
+            نیمبو یه بوت‌کمپ مهندسیه که توش یه پروژه‌ی واقعی می‌سازید: {PROJECT.title}. {PROJECT.intro} مسیر از یه فاز صفرِ
+            گرم‌کردنِ ابزارها شروع می‌شه و با نُه هفته‌ی پروژه‌ی اصلی ادامه پیدا می‌کنه؛ هر هفته یک تکه‌ی تازه از معماری زنده
+            می‌شه و روی هفته‌ی قبل سوار می‌شه.
+          </p>
+          <Link to="/phase-0" className="week-nav-link center">
+            نقشه‌ی کامل بوت‌کمپ و تیم‌ها ←
+          </Link>
         </div>
       </section>
 
@@ -87,28 +97,55 @@ export default function Home() {
       <section className="block">
         <div className="wrap">
           <div className="sec-head">
-            <span className="sec-kicker">WEEKLY CADENCE</span>
-            <h2 className="sec-title">ریتم هر هفته چیه؟</h2>
+            <span className="sec-kicker">GLOSSARY</span>
+            <h2 className="sec-title">سه‌تا «ارائه» که سه‌تا چیز متفاوتن</h2>
           </div>
           <p className="sec-note" style={{ marginBottom: 32 }}>
-            جزئیات محتوا فرق می‌کنه، اما ساختار هر هفته همیشه همینه:
+            توی حرف‌زدن روزمره هر سه‌تای این‌ها گاهی «ارائه» صدا زده می‌شن، ولی هرکدوم زمان، ارائه‌دهنده و هدف خودشو داره:
           </p>
-          <div className="rhythm-grid">
-            {WEEK_EVENTS.map((ev) => (
-              <div key={ev.key} className="rhythm-card">
-                <span className="rhythm-icon">{ev.icon}</span>
-                <span className="rhythm-day mono">{ev.weekday}</span>
-                <span className="rhythm-label">{ev.label}</span>
-                <span className="rhythm-hint">{ev.hint}</span>
+          <div className="brief-grid">
+            <div className="brief-card">
+              <h3>
+                <span className="num mono">۱</span> تحویل مأموریت
+              </h3>
+              <p>
+                هر شنبه، هر تیم چیزی که طیِ هفته پیاده‌سازی کرده رو به منتورها و تیم نیمبو تحویل می‌ده و از تصمیم‌هاش دفاع
+                می‌کنه.
+              </p>
+              <div className="chips">
+                <span className="chip">شنبه‌ها</span>
+                <span className="chip tool">ارائه‌دهنده: تیمِ خودتون</span>
               </div>
-            ))}
-          </div>
-          <div className="callout" style={{ marginTop: 26 }}>
-            <span className="ic">🎤</span>
-            <span>
-              ارائه‌های یکشنبه فقط برای یادگیری نیست؛ فرصتیه برای ارتباط مستقیم با ارائه‌دهنده. جزئیات فرمت و شرکت در{' '}
-              <Link to="/talks">صفحه‌ی ارائه‌های یکشنبه</Link> هست.
-            </span>
+            </div>
+            <div className="brief-card">
+              <h3>
+                <span className="num mono">۲</span> ارائه‌ی فنی
+              </h3>
+              <p>
+                یکی از مهندس‌های ارشد شرکت میاد و یه تکنولوژی رو بهتون ارائه می‌ده — تا الان Clean Code و ریفکتورینگ،
+                کدنویسی با هوش مصنوعی، و Code Review بوده؛ ارائه‌ی بعدی درباره‌ی StarRocks‌ه.
+              </p>
+              <div className="chips">
+                <span className="chip">یکشنبه‌ها</span>
+                <span className="chip tool">ارائه‌دهنده: مهندس ارشد شرکت</span>
+              </div>
+              <Link to="/talks" className="week-nav-link" style={{ marginTop: 14, display: 'inline-block' }}>
+                برنامه‌ی کامل ←
+              </Link>
+            </div>
+            <div className="brief-card">
+              <h3>
+                <span className="num mono">۳</span> ارائه‌ی تیمی
+              </h3>
+              <p>
+                یه تیم مسئول می‌شه بره یه تکنولوژی رو خودش بخونه و برای بقیه‌ی تیم‌ها توضیح بده — هشت موضوع، دوتا برای هر
+                تیم.
+              </p>
+              <div className="chips">
+                <span className="chip">یکشنبه‌ها و سه‌شنبه‌ها</span>
+                <span className="chip tool">ارائه‌دهنده: تیمِ مسئولِ اون موضوع</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>

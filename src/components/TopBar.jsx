@@ -6,7 +6,7 @@ export default function TopBar() {
   const [tab, pick] = useTab();
   const { pathname } = useLocation();
   // The tabs belong to the programme page; elsewhere they would switch something invisible.
-  const onProgramme = pathname === '/' || pathname.startsWith('/phase-0');
+  const onProgramme = pathname.startsWith('/phase-0');
 
   return (
     <header className="topbar">

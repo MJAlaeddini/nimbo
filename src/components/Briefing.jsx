@@ -4,7 +4,7 @@ export default function Briefing() {
       <div className="wrap">
         <div className="sec-head">
           <span className="sec-kicker">BRIEFING</span>
-          <h2 className="sec-title">بریفینگِ پیش از پرتاب</h2>
+          <h2 className="sec-title">بریفینگِ فاز صفر</h2>
         </div>
         <p className="sec-note" style={{ marginBottom: 28 }}>
           توی Nimbo قراره یک پروژه‌ی واقعی بسازید و در این مسیر با کلی ابزار جدید کار کنید:{' '}

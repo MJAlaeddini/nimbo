@@ -15,7 +15,20 @@
 //   teamDemo: { note: 'ساعت و لینک دموی مشترک.' },
 // },
 
-export const WEEK_CONTENT = {};
+export const WEEK_CONTENT = {
+  1: {
+    talk: { note: 'موضوع: Clean Code و ریفکتورینگ' },
+  },
+  2: {
+    talk: { note: 'موضوع: کدنویسی با کمک هوش مصنوعی' },
+  },
+  3: {
+    talk: { note: 'موضوع: Code Review' },
+  },
+  4: {
+    talk: { note: 'موضوع: StarRocks' },
+  },
+};
 
 export function getWeekContent(weekNumber, eventKey) {
   return WEEK_CONTENT[weekNumber]?.[eventKey] ?? null;

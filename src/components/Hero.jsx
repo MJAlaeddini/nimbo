@@ -10,13 +10,13 @@ export default function Hero({ openCount, total, countdownLabel }) {
       </svg>
       <div className="wrap inner">
         <span className="eyebrow">
-          <span className="dot" /> پیش از پرتاب · <span className="mono">PRE-FLIGHT</span>
+          <span className="dot" /> پیش از شروع · <span className="mono">GETTING READY</span>
         </span>
         <div className="phase-num mono">PHASE 00 · WARM-UP</div>
         <h1 className="display">
           فاز <b>صفر</b>
         </h1>
-        <p className="tagline">قبل از اینکه موتورها روشن شن. خوب خودتون رو گرم که کنید که توی دوره زیر پاتون محکم باشه.</p>
+        <p className="tagline">قبل از اینکه ۹ هفته‌ی اصلی دوره شروع بشه. خوب خودتون رو گرم که کنید که توی دوره زیر پاتون محکم باشه.</p>
         <div className="launch-status">
           <div className="ls-block">
             <span className="ls-label">مأموریت باز</span>

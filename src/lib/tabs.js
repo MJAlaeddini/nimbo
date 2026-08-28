@@ -4,7 +4,7 @@
 const EVENT = 'nimbo-tab-change';
 export const TABS = ['phase0', 'roadmap', 'rhythm', 'syllabus', 'teams'];
 
-let current = 'phase0';
+let current = 'roadmap';
 
 export function readTab() {
   return current;

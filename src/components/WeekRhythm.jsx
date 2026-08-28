@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { RHYTHM, RHYTHM_TEXT } from '../content/rhythm';
 import { faDigits } from '../lib/time';
 import { BoltIcon, CheckIcon, FlagIcon, LockIcon, SparkIcon } from './icons';
@@ -96,6 +97,13 @@ export default function WeekRhythm() {
         <div className="rh-rest">
           <strong>{t.restTitle}</strong>
           <p>{t.restNote}</p>
+        </div>
+
+        <div className="callout" style={{ marginTop: 26 }}>
+          <span className="ic">🎤</span>
+          <span>
+            برنامه و موضوعِ کاملِ ارائه‌های فنیِ یکشنبه‌ها را در <Link to="/talks">صفحه‌ی ارائه‌ی فنی</Link> ببینید.
+          </span>
         </div>
       </div>
     </section>

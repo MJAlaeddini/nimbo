@@ -20,7 +20,7 @@ export const WEEK_EVENTS = [
     key: 'mission',
     dayOffset: 0,
     weekday: 'شنبه',
-    icon: '🚀',
+    icon: '📌',
     label: 'اعلام مأموریت هفته',
     hint: 'ابتدای هفته، مأموریتِ این هفته این‌جا اعلام می‌شود.',
   },

@@ -112,7 +112,7 @@ export const ROADMAP_TEXT = {
     phase0: 'فاز صفر',
     roadmap: 'نقشه‌ی بوت‌کمپ',
     rhythm: 'برنامه‌ی هفتگی',
-    syllabus: 'سرفصل ارائه‌ها',
+    syllabus: 'سرفصل ارائه‌ی تیمی',
     teams: 'تیم‌ها',
   },
   kicker: 'ROADMAP',

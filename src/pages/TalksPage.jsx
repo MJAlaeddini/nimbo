@@ -61,13 +61,13 @@ export default function TalksPage() {
       <section className="hero" style={{ padding: '84px 0 54px' }}>
         <div className="wrap inner">
           <span className="eyebrow">
-            <span className="dot" /> یکشنبه‌ها · <span className="mono">SUNDAY TALKS</span>
+            <span className="dot" /> یکشنبه‌ها · <span className="mono">TECH TALKS</span>
           </span>
           <h1 className="display" style={{ fontSize: 'clamp(2.6rem,7vw,5rem)' }}>
-            ارائه‌های <b>یکشنبه</b>
+            ارائه‌ی <b>فنی</b>
           </h1>
           <p className="tagline">
-            هر یکشنبه یکی از مهندس‌های ارشد شرکت درباره‌ی موضوعی مثل Code Review، Microservices یا Prompt Engineering حرف می‌زنه — موضوع‌هایی که مستقیم کیفیت کارتون رو بالا می‌بره. هدف فقط یادگیری نیست؛ فرصتیه برای ارتباط مستقیم و واقعی با کسی که سال‌ها این کار رو کرده.
+            هر یکشنبه یکی از مهندس‌های ارشد شرکت درباره‌ی موضوعی حرف می‌زنه که مستقیم کیفیت کارتون رو بالا می‌بره — تا الان Clean Code و ریفکتورینگ، کدنویسی با هوش مصنوعی، و Code Review بوده. هدف فقط یادگیری نیست؛ فرصتیه برای ارتباط مستقیم و واقعی با کسی که سال‌ها این کار رو کرده.
           </p>
         </div>
       </section>

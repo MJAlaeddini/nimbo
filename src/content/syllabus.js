@@ -12,7 +12,7 @@
 // می‌شود، نه با کم گفتن.
 
 export const SYLLABUS_TEXT = {
-  kicker: 'SUNDAY TALKS · SYLLABUS',
+  kicker: 'TEAM SYLLABUS',
   title: 'سرفصل‌های ارائه',
   tagline:
     'هشت موضوع، هر کدام یک ساعت. هدف این نیست که همه‌چیز گفته بشه — هدف اینه که بعدش بتونی مدل ذهنی اون تکنولوژی رو روی کاغذ بکشی.',
