@@ -1,6 +1,6 @@
 import { dirname, resolve } from 'node:path';
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { configured, send } from './bale.js';
+import { call, configured, send } from './bale.js';
 import * as store from './store.js';
 
 // The bot that tells the group what is coming.
@@ -222,9 +222,43 @@ export async function tick(now = Date.now()) {
   return { sent, adopted: 0 };
 }
 
+// Half-configured is the normal first step: the token is easy to paste, the chat id has to
+// be looked up. Rather than make someone run a command on the server for it, the boot log
+// says what the bot can already see — one deploy, then read it off `docker compose logs`.
+async function reportChats() {
+  try {
+    const updates = await call('getUpdates', { limit: '100' });
+    if (!updates.ok) {
+      console.error(`[announce] the token was refused: ${updates.description ?? 'unknown'}`);
+      return;
+    }
+    const chats = new Map();
+    for (const update of updates.result ?? []) {
+      const chat = update.message?.chat ?? update.edited_message?.chat;
+      if (chat) chats.set(chat.id, chat);
+    }
+    if (chats.size === 0) {
+      console.log('[announce] the token works. No chats seen yet — send any message in the group, then restart.');
+      return;
+    }
+    console.log('[announce] the token works. Chats it can see — put the right id in BALE_CHAT_ID:');
+    for (const chat of chats.values()) {
+      const name = chat.title ?? [chat.first_name, chat.last_name].filter(Boolean).join(' ');
+      console.log(`[announce]   ${chat.type} ${chat.id} ${name}`);
+    }
+  } catch (err) {
+    console.error(`[announce] could not reach Bale: ${err.message}`);
+  }
+}
+
 export function startAnnouncer() {
   if (!configured() && process.env.ANNOUNCE_DRY_RUN !== '1') {
-    console.log('[announce] BALE_BOT_TOKEN or BALE_CHAT_ID missing — the bot is off');
+    if (process.env.BALE_BOT_TOKEN) {
+      console.log('[announce] BALE_CHAT_ID is missing — asking Bale which chats this bot is in');
+      reportChats();
+    } else {
+      console.log('[announce] BALE_BOT_TOKEN or BALE_CHAT_ID missing — the bot is off');
+    }
     return null;
   }
   if (!localeWorks()) {
