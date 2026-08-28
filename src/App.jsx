@@ -29,8 +29,9 @@ export default function App() {
       <TopBar />
       <Suspense fallback={null}>
         <Routes>
-          {/* یک صفحه و یک آدرس: فاز صفر، صورت پروژه، و نُه هفته زیر هم. */}
-          <Route path="/" element={<Navigate to="/phase-0" replace />} />
+          {/* یک صفحه و یک آدرس: فاز صفر، صورت پروژه، و نُه هفته زیر هم. آدرس ریشه هم همین
+              صفحه را نشان می‌دهد، بدون redirect به /phase-0 — آدرس‌نوار همان‌جا می‌ماند. */}
+          <Route path="/" element={<Phase0 />} />
           <Route path="/phase-0" element={<Phase0 />} />
           <Route path="/phase-0/:weekSlug" element={<Phase0 />} />
           {/* آدرس‌های قدیمیِ نقشه به همان صفحه برمی‌گردند. */}
