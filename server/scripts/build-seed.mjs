@@ -3,6 +3,7 @@
 import { writeFileSync } from 'node:fs';
 import { PHASES, weeks } from '../../src/content/bootcamp.js';
 import { ACCOUNTS, COMPETENCIES, OBSERVER_PERSONAS, TEAMS } from '../../src/content/people.js';
+import { PICK_TEXT, SCHEDULE, TOPICS } from '../../src/content/syllabus.js';
 
 // Each challenge opens on a sentence from someone who earned the right to say it. The
 // sentence stays in the language it was written in — a line prefixed with `> ` is the quote,
@@ -108,8 +109,30 @@ const seed = {
 
 const out = new URL('../seed/roadmap.json', import.meta.url);
 writeFileSync(out, `${JSON.stringify(seed, null, 2)}\n`);
+
+// The talks travel separately. The bot that announces them runs inside the api container,
+// and that image copies only src/ and seed/ — so the schedule has to be a file in seed/,
+// not an import from src/content that exists on the build machine and nowhere else.
+//
+// Flattened on purpose: the announcer wants a team name and a topic name, not ids it would
+// have to resolve against a roster it does not otherwise need.
+const TEAM_NAME = Object.fromEntries(TEAMS.map((t) => [t.id, t.name]));
+const TOPIC_NAME = Object.fromEntries(TOPICS.map((t) => [t.id, t.name]));
+const talks = {
+  clock: PICK_TEXT.clock,
+  hour: 18,
+  talks: SCHEDULE.map((slot) => ({
+    n: slot.n,
+    date: slot.date,
+    team: TEAM_NAME[slot.teamId] ?? slot.teamId,
+    topic: TOPIC_NAME[slot.topicId] ?? slot.topicId,
+  })),
+};
+const talksOut = new URL('../seed/talks.json', import.meta.url);
+writeFileSync(talksOut, `${JSON.stringify(talks, null, 2)}\n`);
 const people = seed.teams.reduce((n, t) => n + t.members.length, 0);
 console.log(
   `seeded ${seed.weeks.length} weeks, ${seed.challenges.length} challenges, ` +
     `${seed.teams.length} teams (${people} people) -> ${out.pathname}`,
 );
+console.log(`seeded ${talks.talks.length} talks -> ${talksOut.pathname}`);

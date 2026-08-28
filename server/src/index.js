@@ -13,6 +13,7 @@ import {
 } from './auth.js';
 import { fullRoadmap, publicRoadmap } from './public.js';
 import { listBackups, snapshotNow, startDailyBackups } from './backup.js';
+import { startAnnouncer } from './announce.js';
 import { SHEETS } from './sheets.js';
 import { staffBoard } from './staff.js';
 import * as store from './store.js';
@@ -42,6 +43,9 @@ if (ORIGIN) {
 store.init();
 // One copy of the data file a day, kept on the same volume, thirty days deep.
 startDailyBackups();
+// Announcements to the participants' Bale group. Silent unless a token and a chat id are
+// in the environment, so nothing changes for anyone who has not set them.
+startAnnouncer();
 
 const ok = (res, value) => (value ? res.json(value) : res.status(404).json({ error: 'not found' }));
 

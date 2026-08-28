@@ -23,6 +23,11 @@ services:
       STAFF_PASSWORD_TARKASHVAND: ${STAFF_PASSWORD_TARKASHVAND:-}
       STAFF_PASSWORD_AMIR: ${STAFF_PASSWORD_AMIR:-}
       STAFF_PASSWORD_LEAD: ${STAFF_PASSWORD_LEAD:-}
+      # اعلام مناسبت‌ها در گروه بله. بدون این دو، بات خاموش است و چیزی عوض نمی‌شود.
+      # توکن فقط در .env روی سرور می‌نشیند — این ریپو عمومی است.
+      BALE_BOT_TOKEN: ${BALE_BOT_TOKEN:-}
+      BALE_CHAT_ID: ${BALE_CHAT_ID:-}
+      ANNOUNCE_DRY_RUN: ${ANNOUNCE_DRY_RUN:-}
       # Two proxies stand in front of the API here (Caddy, then nginx), so the visitor's
       # real address sits two hops back in X-Forwarded-For. Without this, the login
       # throttle sees one client for everybody — nginx — and locks the whole site at once.

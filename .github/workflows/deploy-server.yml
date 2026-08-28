@@ -85,9 +85,9 @@ jobs:
         run: |
           set -euo pipefail
           node server/scripts/build-seed.mjs
-          if ! git diff --quiet -- server/seed/roadmap.json; then
+          if ! git diff --quiet -- server/seed/; then
             echo "::error file=server/seed/roadmap.json::Out of date. Run 'node server/scripts/build-seed.mjs' and commit the result."
-            git --no-pager diff --stat -- server/seed/roadmap.json
+            git --no-pager diff --stat -- server/seed/
             exit 1
           fi
 

@@ -1,0 +1,54 @@
+{
+  "clock": "۶ عصر",
+  "hour": 18,
+  "talks": [
+    {
+      "n": 1,
+      "date": "2026-09-01",
+      "team": "TMNT",
+      "topic": "Kafka"
+    },
+    {
+      "n": 2,
+      "date": "2026-09-06",
+      "team": "AAA",
+      "topic": "Maven / Gradle"
+    },
+    {
+      "n": 3,
+      "date": "2026-09-08",
+      "team": "Teambo",
+      "topic": "Spring Boot"
+    },
+    {
+      "n": 4,
+      "date": "2026-09-13",
+      "team": "Nimbyte",
+      "topic": "SQL / PostgreSQL"
+    },
+    {
+      "n": 5,
+      "date": "2026-09-15",
+      "team": "AAA",
+      "topic": "Prometheus & Grafana"
+    },
+    {
+      "n": 6,
+      "date": "2026-09-20",
+      "team": "Teambo",
+      "topic": "Ansible"
+    },
+    {
+      "n": 7,
+      "date": "2026-09-22",
+      "team": "Nimbyte",
+      "topic": "Kubernetes"
+    },
+    {
+      "n": 8,
+      "date": "2026-09-27",
+      "team": "TMNT",
+      "topic": "Apache Spark"
+    }
+  ]
+}
