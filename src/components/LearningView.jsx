@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { faDigits } from '../lib/time';
-import { disagreement, evidenceLevel, forMember, submitted, weekly } from '../../server/src/aggregate';
+import { disagreement, evidenceLevel, forMember, submitted } from '../../server/src/aggregate';
 
 // نمای مسئول برنامه روی مشاهده‌ها.
 //
@@ -35,8 +35,12 @@ function Cell({ point, onOpen }) {
   );
 }
 
-// §۲۹ — هر نفر در برابر هر معیار، با median هفته‌های ثبت‌شده.
-function Heat({ teams, competencies, rows, onOpen, onOpenPerson }) {
+// §۲۹ — هر نفر در برابر هر معیار، با median همان هفته‌ای که بالای جدول انتخاب شده.
+//
+// قبلاً همیشه آخرین هفته‌ی ثبت‌شده را نشان می‌داد و هیچ‌جا نمی‌گفت. یعنی جدول جلو می‌رفت
+// بدون اینکه معلوم باشد دارد کدام هفته را می‌گوید، و هفته‌های قبل فقط پشت کلیک روی هر
+// خانه دیده می‌شدند.
+function Heat({ teams, competencies, rows, weekId, onOpen, onOpenPerson }) {
   return (
     <div className="heatwrap">
       <table className="heat-table">
@@ -48,7 +52,7 @@ function Heat({ teams, competencies, rows, onOpen, onOpenPerson }) {
                 {c.label}
               </th>
             ))}
-            <th>شواهد</th>
+            <th>شواهد کل دوره</th>
           </tr>
         </thead>
         <tbody>
@@ -73,11 +77,11 @@ function Heat({ teams, competencies, rows, onOpen, onOpenPerson }) {
                     </th>
                     {competencies.map((c, i) => {
                       const summary = summaries[i];
-                      const last = summary.byWeek[summary.byWeek.length - 1];
+                      const point = summary.byWeek.find((p) => p.weekId === weekId);
                       return (
                         <Cell
                           key={c.id}
-                          point={last}
+                          point={point}
                           onOpen={() => onOpen({ member, competency: c, summary })}
                         />
                       );
@@ -215,16 +219,21 @@ function Drill({ open, rows, onClose }) {
   );
 }
 
-export default function LearningView({ board, weekId, onOpenPerson }) {
+export default function LearningView({ board, weekId, onOpenPerson, onOpenGuide }) {
   const [view, setView] = useState('people');
   const [open, setOpen] = useState(null);
+  const [picked, setPicked] = useState(weekId);
   const rows = board.assessments ?? [];
   const competencies = (board.competencies ?? []).filter((c) => !c.archived);
   const teams = board.teams;
 
+  // هفته‌ی قفل چیزی برای نشان‌دادن ندارد، پس در نوار هم نمی‌آید.
+  const openWeeks = board.weeks.filter((w) => w.status !== 'locked');
+  const shown = openWeeks.some((w) => w.id === picked) ? picked : weekId;
+
   const people = teams.flatMap((t) => t.members);
   const done = new Set(
-    submitted(rows).filter((r) => r.weekId === weekId).map((r) => r.memberId),
+    submitted(rows).filter((r) => r.weekId === shown).map((r) => r.memberId),
   );
 
   const views = [
@@ -237,7 +246,7 @@ export default function LearningView({ board, weekId, onOpenPerson }) {
       <header className="staff-card-head">
         <h3>مشاهده‌های ثبت‌شده</h3>
         <span className="staff-note">
-          هفته‌ی {faDigits(weekId)}: {faDigits(done.size)} از {faDigits(people.length)} نفر مشاهده شده‌اند
+          هفته‌ی {faDigits(shown)}: {faDigits(done.size)} از {faDigits(people.length)} نفر مشاهده شده‌اند
         </span>
       </header>
 
@@ -255,7 +264,36 @@ export default function LearningView({ board, weekId, onOpenPerson }) {
       </div>
 
       {view === 'people' && (
-        <Heat teams={teams} competencies={competencies} rows={rows} onOpen={setOpen} onOpenPerson={onOpenPerson} />
+        <>
+          <div className="learn-weeks">
+            <span className="learn-weeks-label">هفته</span>
+            <div role="group" aria-label="انتخاب هفته">
+              {openWeeks.map((w) => (
+                <button
+                  key={w.id}
+                  type="button"
+                  className={`learn-week ${w.id === shown ? 'on' : ''}`}
+                  onClick={() => setPicked(w.id)}
+                >
+                  {faDigits(w.id)}
+                </button>
+              ))}
+            </div>
+            {onOpenGuide && (
+              <button type="button" className="staff-link learn-guide" onClick={onOpenGuide}>
+                این عددها چطور ساخته می‌شوند؟
+              </button>
+            )}
+          </div>
+          <Heat
+            teams={teams}
+            competencies={competencies}
+            rows={rows}
+            weekId={shown}
+            onOpen={setOpen}
+            onOpenPerson={onOpenPerson}
+          />
+        </>
       )}
       {view === 'attention' && <Attention teams={teams} competencies={competencies} rows={rows} />}
 

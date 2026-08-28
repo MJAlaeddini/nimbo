@@ -4,6 +4,7 @@ import { api, download } from '../lib/api';
 import { faDigits } from '../lib/time';
 import Avatar from './Avatar';
 import LearningView from './LearningView';
+import NumbersGuide from './NumbersGuide';
 import PanelTabs from './PanelTabs';
 import ThisWeek from './ThisWeek';
 import ProgramOverview from './ProgramOverview';
@@ -537,6 +538,7 @@ export default function LeadDesk({ board, run, client = api }) {
     { id: 'attention', label: 'نیازمند توجه', count: queueSize },
     { id: 'overview', label: 'نمای برنامه' },
     { id: 'learning', label: 'مشاهده‌ها' },
+    { id: 'numbers', label: 'این عددها' },
     { id: 'review', label: 'مرور هفته' },
     { id: 'teams', label: 'تیم‌ها' },
     { id: 'setup', label: 'تنظیمات' },
@@ -753,8 +755,11 @@ export default function LeadDesk({ board, run, client = api }) {
           board={board}
           weekId={board.weeks.find((w) => w.status === 'active')?.id ?? board.weeks[0]?.id ?? 1}
           onOpenPerson={openPerson}
+          onOpenGuide={() => setTab('numbers')}
         />
       )}
+
+      {tab === 'numbers' && <NumbersGuide board={board} />}
 
       {tab === 'setup' && (
         <>
