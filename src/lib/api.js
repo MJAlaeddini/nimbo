@@ -55,7 +55,13 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
     error.retryAfter = Number(body.retryAfter ?? response.headers.get('Retry-After') ?? 60);
     throw error;
   }
-  if (!response.ok) throw new Error(`${method} ${path} failed: ${response.status}`);
+  if (!response.ok) {
+    // وضعیت روی خطا سوار می‌شود، نه فقط داخل متن: تفاوت ۴۰۳ با بقیه‌ی خطاها را کسی باید
+    // بتواند بدون کندنِ رشته تشخیص بدهد.
+    const error = new Error(`${method} ${path} failed: ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
   return response.status === 204 ? null : response.json();
 }
 
@@ -89,6 +95,11 @@ export const api = {
   board: () => request('/api/staff/board', { auth: true }),
   // یک مشاهده. `status` یا draft است یا submitted؛ نقش منتور را سرور از روی حساب می‌گذارد.
   saveAssessment: (body) => request('/api/staff/assessments', { method: 'PUT', body, auth: true }),
+
+  // فانلِ TPM. مسیرش جداست چون داده‌اش جداست — هیچ‌کدام از این دو نباید بتواند ردیف
+  // دیگری را بخواند یا بنویسد.
+  tpmBoard: () => request('/api/tpm/board', { auth: true }),
+  saveReview: (body) => request('/api/tpm/reviews', { method: 'PUT', body, auth: true }),
   addObservation: (body) => request('/api/staff/observations', { method: 'POST', body, auth: true }),
   removeObservation: (id) => request(`/api/staff/observations/${id}`, { method: 'DELETE', auth: true }),
   patchMember: (id, patch) => request(`/api/staff/members/${id}`, { method: 'PATCH', body: patch, auth: true }),

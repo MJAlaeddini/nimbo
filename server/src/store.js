@@ -81,6 +81,9 @@ function load() {
     competencies: seed.competencies ?? [],
     observerPersonas: seed.observerPersonas ?? [],
     assessments: [],
+    // ردیف‌های جلسه‌ی بازبینی TPM. عمداً جدا از `assessments` — دو فانل مستقل با دو
+    // مجموعه سنجه، و هیچ کوئری‌ای نباید بتواند به‌اشتباه هر دو را با هم بخواند.
+    reviews: [],
     observerAssignments: [],
     observations: [],
     hints: [],
@@ -109,6 +112,9 @@ function load() {
     observerPersonas: saved.observerPersonas?.length ? saved.observerPersonas : base.observerPersonas,
     // Every row from before the V1.1 rewrite is dropped, loudly. See migrate().
     assessments: migrate(saved),
+    // بدون migration و بدون پیش‌فرضِ seed: یا فایل داردش یا خالی است. این مجموعه بعد از
+    // V1.1 ساخته شده، پس هیچ نسخه‌ی قدیمی‌ای ردیفی در آن ندارد که بخواهد اصلاح شود.
+    reviews: saved.reviews ?? [],
     observerAssignments: saved.observerAssignments ?? [],
     observations: saved.observations ?? [],
     hints: saved.hints ?? [],
@@ -628,6 +634,67 @@ export function saveAssessment({ memberId, weekId, ratings = {}, note = '', stat
       else row.ratings[competencyId] = rating;
     }
     row.note = String(note ?? '').trim();
+    row.status = status;
+    row.submittedAt = status === 'submitted' ? row.submittedAt ?? new Date().toISOString() : null;
+    row.updatedAt = new Date().toISOString();
+    return row;
+  });
+}
+
+// --- بازبینی TPM ------------------------------------------------------------
+//
+// قرینه‌ی saveAssessment، با دو فرق عمدی:
+//
+//   - کلیدش (نفر، هفته، TPM) است و در مجموعه‌ی دیگری می‌نشیند، پس رأی TPM هیچ‌وقت روی رأی
+//     منتور نمی‌افتد و برعکس.
+//   - به‌جای یک `note`، سه یادداشتِ برچسب‌دار. یک جعبه‌ی خالی یا خالی می‌ماند یا همه‌چیز در
+//     آن قاطی می‌شود؛ تفکیک این‌جا یعنی در صفحه‌ی مسئول برنامه هم تفکیک‌شده درمی‌آید.
+export function listReviews() {
+  return state.reviews;
+}
+
+export function findReview(memberId, weekId, author) {
+  return (
+    state.reviews.find(
+      (r) => r.memberId === memberId && r.weekId === Number(weekId) && r.author === author,
+    ) ?? null
+  );
+}
+
+export function saveReview({ memberId, weekId, ratings = {}, notes = {}, status = 'draft' }, actor) {
+  const found = findMemberTeam(memberId);
+  if (!found) return null;
+  if (!ASSESSMENT_STATUSES.includes(status)) return null;
+
+  return mutate(() => {
+    let row = findReview(memberId, weekId, actor.user);
+    if (!row) {
+      row = {
+        id: randomUUID(),
+        memberId,
+        teamId: found.team.id,
+        weekId: Number(weekId),
+        author: actor.user,
+        ratings: {},
+        notes: {},
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+        submittedAt: null,
+      };
+      state.reviews.push(row);
+    }
+
+    for (const [metricId, value] of Object.entries(ratings)) {
+      const rating = cleanRating(value);
+      // پاک‌کردن یک انتخاب هم باید ممکن باشد: null یعنی «هنوز جواب نداده‌ام».
+      if (rating === undefined) delete row.ratings[metricId];
+      else row.ratings[metricId] = rating;
+    }
+    for (const [noteId, value] of Object.entries(notes)) {
+      const text = String(value ?? '').trim();
+      if (text) row.notes[noteId] = text;
+      else delete row.notes[noteId];
+    }
     row.status = status;
     row.submittedAt = status === 'submitted' ? row.submittedAt ?? new Date().toISOString() : null;
     row.updatedAt = new Date().toISOString();

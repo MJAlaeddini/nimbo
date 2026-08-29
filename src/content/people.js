@@ -177,6 +177,21 @@ export const ACCOUNTS = [
   // یک حساب، اسم‌های متغیر — پایین را ببین.
   { id: 'senior', user: 'senior', name: 'ناظر ارشد', latin: 'senior observer', role: 'mentor', mentorRole: 'senior_observer', teamId: null },
   { id: 'lead', user: 'lead', name: 'مسئول برنامه', latin: 'programme lead', role: 'lead', mentorRole: null, teamId: null },
+
+  // TPMها. نقششان `tpm` است و نه `mentor` — فانلشان از پایه جداست: سنجه‌ی خودشان، جدول
+  // خودشان، و هیچ مسیری به پنل منتور. `mentorRole` و `teamId` ندارند چون هیچ‌کدام برایشان
+  // معنی نمی‌دهد: هر TPM همه‌ی تیم‌ها را در جلسه‌ی بازبینی می‌بیند.
+  { id: 'ghaffarian', user: 'ghaffarian', name: 'سیدمحمد غفاریان', latin: 'seyedmohammad ghaffarian', role: 'tpm', mentorRole: null, teamId: null },
+  { id: 'heydari', user: 'heydari', name: 'محمد حیدری', latin: 'mohammad heydari', role: 'tpm', mentorRole: null, teamId: null },
+  { id: 'zarezadeh', user: 'zarezadeh', name: 'میثم زارع‌زاده', latin: 'meysam zarezadeh', role: 'tpm', mentorRole: null, teamId: null },
+  { id: 'aghajani', user: 'aghajani', name: 'مهدی آقاجانی', latin: 'mahdi aghajani', role: 'tpm', mentorRole: null, teamId: null },
+  { id: 'khoobi', user: 'khoobi', name: 'مهدی خوبی', latin: 'mahdi khoobi', role: 'tpm', mentorRole: null, teamId: null },
+  // همان مهدی تیموری که اسمش در فهرست ناظرهای ارشد هم هست. یک آدم، دو کلاه، دو حساب —
+  // و ردیف‌هایش در دو فانل مختلف می‌نشیند.
+  { id: 'teymouri', user: 'teymouri', name: 'مهدی تیموری', latin: 'mahdi teymouri', role: 'tpm', mentorRole: null, teamId: null },
+  { id: 'masoudi', user: 'masoudi', name: 'عرفان مسعودی', latin: 'erfan masoudi', role: 'tpm', mentorRole: null, teamId: null },
+  { id: 'darsanj', user: 'darsanj', name: 'محمدجواد دارسنج', latin: 'mohammadjavad darsanj', role: 'tpm', mentorRole: null, teamId: null },
+  { id: 'borjian', user: 'borjian', name: 'امین برجیان', latin: 'amin borjian', role: 'tpm', mentorRole: null, teamId: null },
 ];
 
 // اسم‌هایی که ناظر ارشد می‌تواند موقع ورود انتخاب کند.

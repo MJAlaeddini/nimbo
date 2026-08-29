@@ -5,9 +5,10 @@ import LeadDesk from '../components/LeadDesk';
 import PersonaPicker from '../components/PersonaPicker';
 import DemoPanel from '../components/DemoPanel';
 import MentorDesk from '../components/MentorDesk';
+import TpmDesk from '../components/TpmDesk';
 import { LockIcon } from '../components/icons';
 
-const ROLE_LABEL = { mentor: STAFF_TEXT.roleMentor, lead: STAFF_TEXT.roleLead, admin: STAFF_TEXT.roleAdmin };
+const ROLE_LABEL = { mentor: STAFF_TEXT.roleMentor, lead: STAFF_TEXT.roleLead, admin: STAFF_TEXT.roleAdmin, tpm: 'TPM' };
 
 function Login({ onDone }) {
   const [user, setUser] = useState('');
@@ -70,8 +71,18 @@ export default function StaffPage() {
       setBoard(await api.board());
       setNeedsLogin(false);
     } catch (err) {
-      if (String(err.message).includes('unauthorized')) setNeedsLogin(true);
-      else setError('برداشتن اطلاعات از سرور جواب نداد.');
+      if (String(err.message).includes('unauthorized')) return setNeedsLogin(true);
+      // ۴۰۳ روی بردِ منتور یعنی این حساب TPM است. دو فانل جدا دو مسیر جدا دارند و هیچ
+      // کدام دیگری را نمی‌گیرد؛ خودِ ۴۰۳ همان چیزی است که می‌گوید کدام یکی.
+      if (err.status === 403) {
+        try {
+          setBoard(await api.tpmBoard());
+          return setNeedsLogin(false);
+        } catch {
+          return setError('برداشتن اطلاعات از سرور جواب نداد.');
+        }
+      }
+      setError('برداشتن اطلاعات از سرور جواب نداد.');
     }
   }, []);
 
@@ -142,9 +153,11 @@ export default function StaffPage() {
             <b>{board.me.name}</b>
             <i className={`staff-role role-${board.me.role}`}>{ROLE_LABEL[board.me.role] ?? board.me.role}</i>
           </span>
-          <button type="button" className={`staff-link ${demo ? 'on' : ''}`} onClick={() => setDemo(!demo)}>
-            {demo ? 'بازگشت به پنل واقعی' : 'دمو'}
-          </button>
+          {board.me.role !== 'tpm' && (
+            <button type="button" className={`staff-link ${demo ? 'on' : ''}`} onClick={() => setDemo(!demo)}>
+              {demo ? 'بازگشت به پنل واقعی' : 'دمو'}
+            </button>
+          )}
           <button
             type="button"
             className="staff-link"
@@ -164,6 +177,8 @@ export default function StaffPage() {
           <DemoPanel />
         ) : needsPersona ? (
           <PersonaPicker onDone={load} />
+        ) : board.me.role === 'tpm' ? (
+          <TpmDesk board={board} run={run} />
         ) : wide ? (
           <LeadDesk board={board} run={run} />
         ) : (

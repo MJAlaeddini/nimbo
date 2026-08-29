@@ -581,6 +581,87 @@
       "role": "lead",
       "mentorRole": null,
       "teamId": null
+    },
+    {
+      "id": "ghaffarian",
+      "user": "ghaffarian",
+      "name": "سیدمحمد غفاریان",
+      "latin": "seyedmohammad ghaffarian",
+      "role": "tpm",
+      "mentorRole": null,
+      "teamId": null
+    },
+    {
+      "id": "heydari",
+      "user": "heydari",
+      "name": "محمد حیدری",
+      "latin": "mohammad heydari",
+      "role": "tpm",
+      "mentorRole": null,
+      "teamId": null
+    },
+    {
+      "id": "zarezadeh",
+      "user": "zarezadeh",
+      "name": "میثم زارع‌زاده",
+      "latin": "meysam zarezadeh",
+      "role": "tpm",
+      "mentorRole": null,
+      "teamId": null
+    },
+    {
+      "id": "aghajani",
+      "user": "aghajani",
+      "name": "مهدی آقاجانی",
+      "latin": "mahdi aghajani",
+      "role": "tpm",
+      "mentorRole": null,
+      "teamId": null
+    },
+    {
+      "id": "khoobi",
+      "user": "khoobi",
+      "name": "مهدی خوبی",
+      "latin": "mahdi khoobi",
+      "role": "tpm",
+      "mentorRole": null,
+      "teamId": null
+    },
+    {
+      "id": "teymouri",
+      "user": "teymouri",
+      "name": "مهدی تیموری",
+      "latin": "mahdi teymouri",
+      "role": "tpm",
+      "mentorRole": null,
+      "teamId": null
+    },
+    {
+      "id": "masoudi",
+      "user": "masoudi",
+      "name": "عرفان مسعودی",
+      "latin": "erfan masoudi",
+      "role": "tpm",
+      "mentorRole": null,
+      "teamId": null
+    },
+    {
+      "id": "darsanj",
+      "user": "darsanj",
+      "name": "محمدجواد دارسنج",
+      "latin": "mohammadjavad darsanj",
+      "role": "tpm",
+      "mentorRole": null,
+      "teamId": null
+    },
+    {
+      "id": "borjian",
+      "user": "borjian",
+      "name": "امین برجیان",
+      "latin": "amin borjian",
+      "role": "tpm",
+      "mentorRole": null,
+      "teamId": null
     }
   ],
   "competencies": [
