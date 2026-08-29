@@ -35,8 +35,9 @@ nav.mainnav{display:flex;gap:4px;flex:1;overflow-x:auto;scrollbar-width:none}
    می‌شوند و چون اسکرول‌بار پنهان است هیچ نشانه‌ای هم ندارد که بقیه‌ای هست.
    نوار تب‌ها می‌رود خط خودش، زیر برند، و آن‌جا هر پنج‌تا جا می‌شوند. */
 @media (max-width:720px){
-  nav.mainnav{flex:1 0 100%;flex-wrap:wrap;justify-content:center;overflow-x:visible;gap:5px}
-  nav.mainnav .navtab{font-size:.8rem;padding:6px 10px}
+  nav.mainnav{flex:1 0 100%;flex-wrap:wrap;justify-content:center;overflow-x:visible;gap:8px}
+  /* پدینگ عمودی طوری که قد لمسی تب از ۴۴ پیکسل کمتر نشود، حتی با فونت کوچک‌تر روی موبایل. */
+  nav.mainnav .navtab{font-size:.8rem;padding:11px 12px}
 }
 nav.mainnav::-webkit-scrollbar{display:none}
 nav.mainnav a{white-space:nowrap;font-size:.9rem;color:var(--lav);text-decoration:none;padding:8px 12px;border-radius:9px;transition:.18s}
@@ -824,6 +825,7 @@ footer p{color:var(--lav-dim);font-size:.82rem;margin-top:14px}
 
 .rp-quiz{margin-top:16px;border:1px solid rgba(245,166,35,.3);border-radius:14px;background:linear-gradient(180deg,rgba(245,166,35,.07),transparent);overflow:hidden}
 .rp-quiz-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:none;border:0;color:var(--gold-lit);font:inherit;font-weight:700;font-size:.92rem;text-align:right;cursor:pointer}
+.rp-quiz-toggle:focus-visible{outline:2px solid var(--gold-lit);outline-offset:-2px}
 .rp-quiz-chev{color:var(--gold);font-size:1.1rem;line-height:1}
 .rp-quiz-list{margin:0 18px 16px;padding-inline-start:22px;color:var(--ink)}
 .rp-quiz-list li{margin:9px 0;font-size:.92rem;line-height:1.8}
@@ -1504,7 +1506,7 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
 
 /* اسم و نقش روی یک خط، با نقش چسبیده به لبه‌ی مقابل — «سرگروه» بدون خواندن پیدا شود. */
 .teamcard-people{gap:8px;margin-bottom:16px}
-.teamcard-people li{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:6px 10px;border-radius:9px;color:var(--ink);font-size:.92rem;background:rgba(13,5,24,.28);transition:background .18s}
+.teamcard-people li{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 10px;padding:6px 10px;border-radius:9px;color:var(--ink);font-size:.92rem;background:rgba(13,5,24,.28);transition:background .18s}
 .teamcard-people li:hover{background:color-mix(in srgb, var(--team-color) 10%, rgba(13,5,24,.28))}
 .teamcard-people i{color:var(--team-color);font-size:.7rem;font-style:normal;padding:2px 8px;border:1px solid color-mix(in srgb, var(--team-color) 40%, transparent);border-radius:999px;background:color-mix(in srgb, var(--team-color) 12%, transparent)}
 
