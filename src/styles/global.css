@@ -1480,29 +1480,39 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
   .teamcard-talks li{flex-wrap:wrap;row-gap:2px}
   .teamcard-talks i{width:100%;text-align:left}
 }
-.teamcard{padding:15px 17px;border:1px solid var(--line);border-top:3px solid var(--team-color);border-radius:14px;background:var(--panel)}
-.teamcard header{color:var(--team-color);font-size:1.02rem;font-weight:900;margin-bottom:10px;text-align:left}
+.teamcard{position:relative;overflow:hidden;padding:15px 17px;border:1px solid var(--line);border-top:3px solid var(--team-color);border-radius:14px;background:var(--panel);transition:transform .22s,border-color .22s,box-shadow .22s}
+.teamcard header{display:flex;align-items:center;gap:10px;color:var(--team-color);font-size:1.02rem;font-weight:900;margin-bottom:10px;text-align:left}
 .teamcard ul{list-style:none;display:grid;gap:5px}
 .teamcard li{color:var(--lav);font-size:.83rem}
 /* ستون، تا بلوک ارائه‌ها بتواند با margin-top:auto به کف کارت بچسبد. تیمی که چهار نفر
    دارد کارت را بلندتر می‌کند و بدون این، بلوکِ کارتِ کناری وسط هوا می‌ماند. */
 .teamcard.big{display:flex;flex-direction:column;padding:20px 22px}
 .teamcard.big header{font-size:1.35rem;margin-bottom:14px}
+.teamcard.big:hover{transform:translateY(-3px);border-color:color-mix(in srgb, var(--team-color) 55%, var(--line));box-shadow:0 18px 34px -26px var(--team-color)}
 
-.teamcard-mentor{display:flex;align-items:baseline;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+/* پرتوی نرمِ رنگِ تیم، گوشه‌ی بالا-چپِ کارت — بدون اینکه روی خوانایی متن اثر بگذارد. */
+.teamcard-glow{position:absolute;z-index:0;top:-60px;left:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle, color-mix(in srgb, var(--team-color) 30%, transparent), transparent 70%);pointer-events:none}
+.teamcard.big>*:not(.teamcard-glow){position:relative;z-index:1}
+
+/* حرفِ اول اسمِ لاتینِ تیم، توی یک نشانِ گرد به رنگ خودِ تیم — هویتِ کارت را از فاصله هم
+   می‌شود دید، نه فقط از خطِ رنگیِ بالا. */
+.teamcard-avatar{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:color-mix(in srgb, var(--team-color) 22%, transparent);border:1px solid color-mix(in srgb, var(--team-color) 45%, transparent);color:var(--team-color);font-size:.92rem;font-weight:900;text-transform:uppercase}
+
+.teamcard-mentor{display:flex;align-items:center;gap:7px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line);color:var(--team-color)}
 .teamcard-mentor span{color:var(--lav-dim);font-size:.74rem}
 .teamcard-mentor b{color:var(--ink);font-size:.88rem;font-weight:700}
 
 /* اسم و نقش روی یک خط، با نقش چسبیده به لبه‌ی مقابل — «سرگروه» بدون خواندن پیدا شود. */
 .teamcard-people{gap:8px;margin-bottom:16px}
-.teamcard-people li{display:flex;align-items:baseline;justify-content:space-between;gap:10px;color:var(--ink);font-size:.92rem}
-.teamcard-people i{color:var(--gold);font-size:.7rem;font-style:normal;padding:2px 8px;border:1px solid rgba(245,166,35,.35);border-radius:999px;background:rgba(245,166,35,.08)}
+.teamcard-people li{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:6px 10px;border-radius:9px;color:var(--ink);font-size:.92rem;background:rgba(13,5,24,.28);transition:background .18s}
+.teamcard-people li:hover{background:color-mix(in srgb, var(--team-color) 10%, rgba(13,5,24,.28))}
+.teamcard-people i{color:var(--team-color);font-size:.7rem;font-style:normal;padding:2px 8px;border:1px solid color-mix(in srgb, var(--team-color) 40%, transparent);border-radius:999px;background:color-mix(in srgb, var(--team-color) 12%, transparent)}
 
 .teamcard-talks{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
 .teamcard-talks-title{display:block;margin-bottom:9px;color:var(--lav-dim);font-size:.74rem}
 /* بدون wrap: با wrap، اسم بلندی مثل «Prometheus & Grafana» تاریخ را به خط بعد می‌انداخت و
    ستون تاریخ‌ها به هم می‌ریخت. حالا اسم داخل خودش می‌شکند و تاریخ سر جایش می‌ماند. */
-.teamcard-talks li{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:7px 11px;border-radius:9px;background:rgba(13,5,24,.42)}
+.teamcard-talks li{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:9px;border-right:2px solid color-mix(in srgb, var(--team-color) 55%, transparent);background:rgba(13,5,24,.42)}
 .teamcard-talks b{color:var(--ink);font-size:.84rem;font-weight:700;min-width:0}
 .teamcard-talks i{flex:none;color:var(--lav-dim);font-size:.74rem;font-style:normal;white-space:nowrap}
 .teamcard-none{color:var(--lav-dim);font-size:.8rem}

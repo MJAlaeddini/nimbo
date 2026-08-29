@@ -1,5 +1,6 @@
 import { ACCOUNTS, TEAMS, TEAMS_TEXT } from '../content/people';
 import { PICK_TEXT, SCHEDULE, TOPICS } from '../content/syllabus';
+import { SparkIcon } from './icons';
 import { fmtDate, fmtWeekday } from '../lib/time';
 
 // معرفی تیم‌ها. قبلاً وسط تب سرفصل‌ها بود و آن‌جا بین «چه چیزی ارائه می‌شود» و «کِی ارائه
@@ -38,10 +39,18 @@ export default function Teams() {
               const talks = talksOf(team.id);
               return (
                 <article key={team.id} className="teamcard big" style={{ '--team-color': team.color }}>
-                  <header dir="ltr">{team.name}</header>
+                  <span className="teamcard-glow" aria-hidden="true" />
+
+                  <header>
+                    <span className="teamcard-avatar" aria-hidden="true">
+                      {team.latin.slice(0, 1)}
+                    </span>
+                    <span dir="ltr">{team.name}</span>
+                  </header>
 
                   {mentor && (
                     <p className="teamcard-mentor">
+                      <SparkIcon size={13} />
                       <span>{TEAMS_TEXT.mentorLabel}</span>
                       <b>{mentor.name}</b>
                     </p>
