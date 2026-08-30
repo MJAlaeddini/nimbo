@@ -1512,6 +1512,8 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
 .teamcard-people{gap:8px;margin-bottom:16px}
 .teamcard-people li{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 10px;padding:6px 10px;border-radius:9px;color:var(--ink);font-size:.92rem;background:rgba(13,5,24,.28);transition:background .18s}
 .teamcard-people li:hover{background:color-mix(in srgb, var(--team-color) 10%, rgba(13,5,24,.28))}
+.teamcard-person{display:inline-flex;align-items:center;gap:7px}
+.teamcard-person .ico{flex:0 0 auto;color:var(--team-color);opacity:.85}
 .teamcard-people i{color:var(--team-color);font-size:.7rem;font-style:normal;padding:2px 8px;border:1px solid color-mix(in srgb, var(--team-color) 40%, transparent);border-radius:999px;background:color-mix(in srgb, var(--team-color) 12%, transparent)}
 
 .teamcard-talks{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}

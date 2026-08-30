@@ -2,7 +2,7 @@ import { ACCOUNTS, TEAMS, TEAMS_TEXT } from '../content/people';
 import { PICK_TEXT, SCHEDULE, TOPIC_LOGOS, TOPICS } from '../content/syllabus';
 import { toolLogo } from '../content/toolLogos';
 import HeroCanvas from './HeroCanvas';
-import { SparkIcon, ToolLogo } from './icons';
+import { ChildIcon, ElderIcon, PersonIcon, SparkIcon, ToolLogo } from './icons';
 import { fmtDate, fmtWeekday } from '../lib/time';
 
 // معرفی تیم‌ها. قبلاً وسط تب سرفصل‌ها بود و آن‌جا بین «چه چیزی ارائه می‌شود» و «کِی ارائه
@@ -13,6 +13,8 @@ import { fmtDate, fmtWeekday } from '../lib/time';
 // درمی‌آید، پس دو جا نمی‌تواند اختلاف پیدا کند.
 const MENTOR = Object.fromEntries(ACCOUNTS.map((a) => [a.id, a]));
 const TOPIC = Object.fromEntries(TOPICS.map((t) => [t.id, t]));
+
+const AVATAR_ICON = { person: PersonIcon, elder: ElderIcon, child: ChildIcon };
 
 function talksOf(teamId) {
   return SCHEDULE.filter((slot) => slot.teamId === teamId);
@@ -60,14 +62,18 @@ export default function Teams() {
                   )}
 
                   <ul className="teamcard-people">
-                    {team.members.map((m) => (
-                      <li key={m.id}>
-                        <span>
-                          <span aria-hidden="true">{m.emoji}</span> {m.name}
-                        </span>
-                        {m.seat && <i>{m.seat}</i>}
-                      </li>
-                    ))}
+                    {team.members.map((m) => {
+                      const Avatar = AVATAR_ICON[m.avatar] ?? PersonIcon;
+                      return (
+                        <li key={m.id}>
+                          <span className="teamcard-person">
+                            <Avatar size={15} />
+                            {m.name}
+                          </span>
+                          {m.seat && <i>{m.seat}</i>}
+                        </li>
+                      );
+                    })}
                   </ul>
 
                   <div className="teamcard-talks">
