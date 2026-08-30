@@ -192,6 +192,7 @@ export const ACCOUNTS = [
   { id: 'masoudi', user: 'masoudi', name: 'عرفان مسعودی', latin: 'erfan masoudi', role: 'tpm', mentorRole: null, teamId: null },
   { id: 'darsanj', user: 'darsanj', name: 'محمدجواد دارسنج', latin: 'mohammadjavad darsanj', role: 'tpm', mentorRole: null, teamId: null },
   { id: 'borjian', user: 'borjian', name: 'امین برجیان', latin: 'amin borjian', role: 'tpm', mentorRole: null, teamId: null },
+  { id: 'velayi', user: 'velayi', name: 'سجاد ولایی', latin: 'sajjad velayi', role: 'tpm', mentorRole: null, teamId: null },
 ];
 
 // اسم‌هایی که ناظر ارشد می‌تواند موقع ورود انتخاب کند.

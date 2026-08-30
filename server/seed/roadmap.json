@@ -662,6 +662,15 @@
       "role": "tpm",
       "mentorRole": null,
       "teamId": null
+    },
+    {
+      "id": "velayi",
+      "user": "velayi",
+      "name": "سجاد ولایی",
+      "latin": "sajjad velayi",
+      "role": "tpm",
+      "mentorRole": null,
+      "teamId": null
     }
   ],
   "competencies": [
