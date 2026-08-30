@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { TEAMS } from '../content/people';
-import { MODEL_TEXT, PICK_TEXT, SCHEDULE, SESSION_SHAPE, SYLLABUS_TEXT, TOPICS } from '../content/syllabus';
+import { MODEL_TEXT, PICK_TEXT, SCHEDULE, SESSION_SHAPE, SYLLABUS_TEXT, TOPIC_LOGOS, TOPICS } from '../content/syllabus';
 import { toolLogo } from '../content/toolLogos';
 import { fmtDate, fmtWeekday } from '../lib/time';
 import HeroCanvas from './HeroCanvas';
@@ -12,20 +12,6 @@ import TalkTrack from './TalkTrack';
 // اختلاف پیدا نکند.
 const TEAM = Object.fromEntries(TEAMS.map((t) => [t.id, t]));
 const SLOT_OF = Object.fromEntries(SCHEDULE.map((s) => [s.topicId, s]));
-
-// اسمِ نمایشیِ بعضی سرفصل‌ها دو ابزار را با «/» یا «&» کنار هم می‌گذارد (مثل «Maven /
-// Gradle»)، پس یک لوگوی تکی از روی خودِ اسم درنمی‌آید — این‌جا صریح گفته شده هر سرفصل
-// لوگوی کدام ابزار(ها) را می‌خواهد.
-const TOPIC_LOGOS = {
-  build: ['maven', 'gradle'],
-  kafka: ['kafka'],
-  monitoring: ['prometheus', 'grafana'],
-  spring: ['springboot'],
-  spark: ['spark'],
-  k8s: ['kubernetes'],
-  sql: ['postgresql'],
-  ansible: ['ansible'],
-};
 
 // The eight talks, their syllabus, and how the topics get shared out.
 //

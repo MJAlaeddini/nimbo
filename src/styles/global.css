@@ -76,7 +76,7 @@ h1.display b{color:var(--gold)}
 .brief-card p{color:var(--lav);font-size:.96rem}
 .brief-card .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
 .chip{font-size:.78rem;color:var(--lav);background:rgba(182,154,214,.08);border:1px solid var(--line-strong);border-radius:6px;padding:3px 9px}
-.chip.tool{font-family:"Vazirmatn",system-ui,sans-serif;color:var(--gold-lit);background:rgba(245,166,35,.1);border-color:rgba(245,166,35,.25)}
+.chip.tool{display:inline-flex;align-items:center;gap:6px;font-family:"Vazirmatn",system-ui,sans-serif;color:var(--gold-lit);background:rgba(245,166,35,.1);border-color:rgba(245,166,35,.25)}
 .pipeline{margin-top:22px;font-family:"Vazirmatn",system-ui,sans-serif;font-size:.82rem;color:var(--lav);background:var(--void-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;direction:ltr;text-align:center;overflow-x:auto}
 .pipeline b{color:var(--gold)}
 
@@ -1519,7 +1519,7 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
 /* بدون wrap: با wrap، اسم بلندی مثل «Prometheus & Grafana» تاریخ را به خط بعد می‌انداخت و
    ستون تاریخ‌ها به هم می‌ریخت. حالا اسم داخل خودش می‌شکند و تاریخ سر جایش می‌ماند. */
 .teamcard-talks li{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:9px;border-right:2px solid color-mix(in srgb, var(--team-color) 55%, transparent);background:rgba(13,5,24,.42)}
-.teamcard-talks b{color:var(--ink);font-size:.84rem;font-weight:700;min-width:0}
+.teamcard-talks b{display:inline-flex;align-items:center;gap:5px;color:var(--ink);font-size:.84rem;font-weight:700;min-width:0}
 .teamcard-talks i{flex:none;color:var(--lav-dim);font-size:.74rem;font-style:normal;white-space:nowrap}
 .teamcard-none{color:var(--lav-dim);font-size:.8rem}
 

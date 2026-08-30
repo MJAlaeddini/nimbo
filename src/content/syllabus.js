@@ -78,6 +78,21 @@ export const MODEL_TEXT = {
     'بعد از هر ارائه، شنونده باید بتواند مدل ذهنی مفاهیم آن تکنولوژی را روی کاغذ بکشد. اگر نتواند، آن ارائه اطلاعات داده ولی مدل نساخته است. دو نمونه:',
 };
 
+// اسمِ نمایشیِ بعضی سرفصل‌ها دو ابزار را با «/» یا «&» کنار هم می‌گذارد (مثل «Maven /
+// Gradle»)، پس یک لوگوی تکی از روی خودِ اسم درنمی‌آید — این‌جا صریح گفته شده هر سرفصل
+// لوگوی کدام ابزار(ها) را می‌خواهد. هم این فایل و هم people/teams از همین یک نگاشت
+// می‌خوانند تا لوگوی یک موضوع همه‌جا یکی باشد.
+export const TOPIC_LOGOS = {
+  build: ['maven', 'gradle'],
+  kafka: ['kafka'],
+  monitoring: ['prometheus', 'grafana'],
+  spring: ['springboot'],
+  spark: ['spark'],
+  k8s: ['kubernetes'],
+  sql: ['postgresql'],
+  ansible: ['ansible'],
+};
+
 export const TOPICS = [
   {
     id: 'build',

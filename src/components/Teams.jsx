@@ -1,7 +1,8 @@
 import { ACCOUNTS, TEAMS, TEAMS_TEXT } from '../content/people';
-import { PICK_TEXT, SCHEDULE, TOPICS } from '../content/syllabus';
+import { PICK_TEXT, SCHEDULE, TOPIC_LOGOS, TOPICS } from '../content/syllabus';
+import { toolLogo } from '../content/toolLogos';
 import HeroCanvas from './HeroCanvas';
-import { SparkIcon } from './icons';
+import { SparkIcon, ToolLogo } from './icons';
 import { fmtDate, fmtWeekday } from '../lib/time';
 
 // معرفی تیم‌ها. قبلاً وسط تب سرفصل‌ها بود و آن‌جا بین «چه چیزی ارائه می‌شود» و «کِی ارائه
@@ -77,7 +78,12 @@ export default function Teams() {
                       <ul>
                         {talks.map((slot) => (
                           <li key={slot.n}>
-                            <b dir="ltr">{TOPIC[slot.topicId]?.name ?? slot.topicId}</b>
+                            <b dir="ltr">
+                              {(TOPIC_LOGOS[slot.topicId] ?? []).map((name) => (
+                                <ToolLogo key={name} logo={toolLogo(name)} size={13} />
+                              ))}
+                              {TOPIC[slot.topicId]?.name ?? slot.topicId}
+                            </b>
                             {/* ساعت این‌جا هم می‌آید: کسی که فقط تیم خودش را نگاه می‌کند
                                 نباید برای دانستن ساعت برود تب سرفصل‌ها. */}
                             <i>
