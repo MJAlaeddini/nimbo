@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { TEAMS } from '../content/people';
 import { MODEL_TEXT, PICK_TEXT, SCHEDULE, SESSION_SHAPE, SYLLABUS_TEXT, TOPICS } from '../content/syllabus';
 import { fmtDate, fmtWeekday } from '../lib/time';
+import HeroNebula from './HeroNebula';
 import MentalModels from './MentalModels';
 import TalkTrack from './TalkTrack';
 
@@ -87,6 +88,7 @@ export default function Syllabus() {
   return (
     <>
       <section className="hero">
+        <HeroNebula />
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> یکشنبه‌ها و سه‌شنبه‌ها · <span className="mono">{SYLLABUS_TEXT.kicker}</span>

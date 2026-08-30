@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ADMIN_TEXT } from '../content/admin';
 import { LIVE, api, readToken, writeToken } from '../lib/api';
 import { faDigits } from '../lib/time';
+import HeroNebula from '../components/HeroNebula';
 import WeekTextEditor from '../components/WeekTextEditor';
 import { BoltIcon, CheckIcon, FlagIcon, LockIcon } from '../components/icons';
 
@@ -382,6 +383,7 @@ export default function AdminPage() {
   return (
     <>
       <section className="hero">
+        <HeroNebula />
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> {hero.eyebrow} · <span className="mono">{hero.eyebrowMono}</span>

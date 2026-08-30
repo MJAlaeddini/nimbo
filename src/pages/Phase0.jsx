@@ -9,6 +9,7 @@ import { useRoadmap } from '../hooks/useRoadmap';
 import { useTab } from '../hooks/useTab';
 import { writeToken } from '../lib/api';
 import Hero from '../components/Hero';
+import HeroNebula from '../components/HeroNebula';
 import Briefing from '../components/Briefing';
 import Timeline from '../components/Timeline';
 import PhaseBoard from '../components/PhaseBoard';
@@ -69,6 +70,7 @@ export default function Phase0() {
       {tab === 'roadmap' && (
         <>
           <section className="hero">
+            <HeroNebula />
             <div className="wrap inner">
               <span className="eyebrow">
                 <span className="dot" /> {ROADMAP_TEXT.hero.eyebrow} · <span className="mono">{ROADMAP_TEXT.hero.eyebrowMono}</span>
