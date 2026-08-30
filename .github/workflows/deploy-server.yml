@@ -78,6 +78,29 @@ jobs:
           done
           curl -fsS http://127.0.0.1:8080/api/health | tee /dev/stderr | grep -q '"status":"ok"'
 
+      # The operator scripts are run inside the api container, so "it works on my machine"
+      # is not the question — what matters is whether they are in the image at all. This
+      # stages exactly what server/Dockerfile COPYs and runs them from there. The first
+      # version of the Bale scripts passed every local test and then could not be found
+      # in the container, because the Dockerfile did not copy scripts/.
+      - name: The operator scripts exist inside the image
+        run: |
+          set -euo pipefail
+          stage="${{ runner.temp }}/app"
+          mkdir -p "$stage"
+          cp server/package.json "$stage"/
+          cp -r server/src server/seed server/scripts "$stage"/
+          cp -r server/node_modules "$stage"/ 2>/dev/null || true
+          cd "$stage"
+          DATA_FILE="${{ runner.temp }}/scripts-check.json" node scripts/bale-preview.mjs > /dev/null
+          # These two report a missing token and exit non-zero by design, so their output is
+          # captured before it is checked — under pipefail a `| grep` would fail the step on
+          # the script's own exit code no matter what it printed.
+          chats=$(node scripts/bale-chats.mjs 2>&1 || true)
+          say=$(node scripts/bale-say.mjs 2>&1 || true)
+          grep -q 'set BALE_BOT_TOKEN first' <<< "$chats"
+          grep -q 'must both be set' <<< "$say"
+
       # The seed is generated from src/content and committed. If someone edits the weeks
       # and forgets to regenerate it, the server would come up with the old text and no
       # error anywhere — so catch it here instead of on the server.
@@ -85,9 +108,9 @@ jobs:
         run: |
           set -euo pipefail
           node server/scripts/build-seed.mjs
-          if ! git diff --quiet -- server/seed/roadmap.json; then
+          if ! git diff --quiet -- server/seed/; then
             echo "::error file=server/seed/roadmap.json::Out of date. Run 'node server/scripts/build-seed.mjs' and commit the result."
-            git --no-pager diff --stat -- server/seed/roadmap.json
+            git --no-pager diff --stat -- server/seed/
             exit 1
           fi
 

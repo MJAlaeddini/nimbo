@@ -16,6 +16,7 @@ let state = null;
 // put the release's wording back immediately, instead of leaving the field empty until the
 // next restart happens to reload it.
 let seedWeeks = [];
+let seedPhases = {};
 
 // Has anyone actually done anything with this person yet?
 function untouched(member) {
@@ -71,6 +72,7 @@ function load() {
   // seed's own objects, so editing a week in the panel would rewrite the copy we keep to
   // revert to — and "undo" would restore the edit it was meant to undo.
   seedWeeks = structuredClone(seed.weeks ?? []);
+  seedPhases = structuredClone(seed.phases ?? {});
   const base = {
     phases: seed.phases ?? {},
     weeks: seed.weeks ?? [],
@@ -81,6 +83,9 @@ function load() {
     competencies: seed.competencies ?? [],
     observerPersonas: seed.observerPersonas ?? [],
     assessments: [],
+    // ردیف‌های جلسه‌ی بازبینی TPM. عمداً جدا از `assessments` — دو فانل مستقل با دو
+    // مجموعه سنجه، و هیچ کوئری‌ای نباید بتواند به‌اشتباه هر دو را با هم بخواند.
+    reviews: [],
     observerAssignments: [],
     observations: [],
     hints: [],
@@ -92,7 +97,7 @@ function load() {
   // does have — an upgrade must never lose an admin's work.
   const saved = JSON.parse(readFileSync(DATA_FILE, 'utf8'));
   return {
-    phases: Object.keys(saved.phases ?? {}).length > 0 ? saved.phases : base.phases,
+    phases: mergePhases(base.phases, saved.phases),
     weeks: mergeWeeks(base.weeks, saved.weeks),
     challenges: saved.challenges ?? base.challenges,
     assignments: saved.assignments ?? [],
@@ -109,6 +114,9 @@ function load() {
     observerPersonas: saved.observerPersonas?.length ? saved.observerPersonas : base.observerPersonas,
     // Every row from before the V1.1 rewrite is dropped, loudly. See migrate().
     assessments: migrate(saved),
+    // بدون migration و بدون پیش‌فرضِ seed: یا فایل داردش یا خالی است. این مجموعه بعد از
+    // V1.1 ساخته شده، پس هیچ نسخه‌ی قدیمی‌ای ردیفی در آن ندارد که بخواهد اصلاح شود.
+    reviews: saved.reviews ?? [],
     observerAssignments: saved.observerAssignments ?? [],
     observations: saved.observations ?? [],
     hints: saved.hints ?? [],
@@ -129,6 +137,47 @@ function load() {
 // this week's text was edited in the panel, in which case that field stays edited — the
 // same bargain the roster and the axes already make.
 const WEEK_OPERATIONAL = ['status'];
+
+// The phases make the same bargain, and they used to make none at all.
+//
+// The rule here was `saved.phases ?? seed`, which is the exact freeze the note above
+// describes: the server writes its whole state on start, so from the second boot the saved
+// copy was never empty and the seed was never read again. A phase's wording could be
+// corrected in the content, deployed, and verified green while the running site kept the
+// old text, with nothing anywhere saying why. Nobody noticed because until now there was
+// no other way to change a phase either — the panel could only open and close them.
+//
+// So: `status` belongs to the panel, because opening a phase is the admin's call and no
+// release should reach in and change it. Everything else comes from the seed unless this
+// phase's text was edited in the panel, in which case that field stays edited.
+const PHASE_OPERATIONAL = ['status'];
+
+function mergePhases(seedMap = {}, savedMap) {
+  if (!savedMap || Object.keys(savedMap).length === 0) return seedMap;
+
+  const merged = {};
+  for (const [id, seedPhase] of Object.entries(seedMap)) {
+    const saved = savedMap[id];
+    if (!saved) {
+      merged[id] = seedPhase;
+      continue;
+    }
+
+    const phase = { ...seedPhase };
+    for (const key of PHASE_OPERATIONAL) if (key in saved) phase[key] = saved[key];
+
+    const edited = Array.isArray(saved.edited) ? saved.edited : [];
+    for (const key of edited) if (key in saved) phase[key] = saved[key];
+    if (edited.length > 0) phase.edited = [...edited];
+
+    merged[id] = phase;
+  }
+
+  // A phase the seed no longer has is kept: dropping it would delete text somebody wrote,
+  // and would orphan every week pointing at it.
+  for (const [id, saved] of Object.entries(savedMap)) if (!merged[id]) merged[id] = saved;
+  return merged;
+}
 
 function mergeWeeks(seedWeeks = [], savedWeeks) {
   if (!Array.isArray(savedWeeks) || savedWeeks.length === 0) return seedWeeks;
@@ -253,11 +302,37 @@ export function listPhases() {
   return state.phases;
 }
 
+// Exactly the fields PhaseBoard renders, and no more. `id` is missing on purpose: weeks
+// point at a phase by it, so letting the panel rewrite it would orphan them.
+const PHASE_FIELDS = ['status', 'code', 'label', 'weeks', 'requirement', 'analysesTitle', 'analyses', 'note'];
+
 export function updatePhase(id, patch) {
   const phase = state.phases[id];
   if (!phase) return null;
   return mutate(() => {
-    if ('status' in patch) phase.status = patch.status === 'open' ? 'open' : 'locked';
+    const edited = new Set(phase.edited ?? []);
+    for (const key of PHASE_FIELDS) {
+      if (!(key in patch)) continue;
+
+      if (key === 'status') {
+        phase.status = patch.status === 'open' ? 'open' : 'locked';
+        continue;
+      }
+
+      if (patch[key] === null) {
+        // Clearing a field hands it back to the release rather than pinning it empty, so a
+        // text edited by mistake can be undone without knowing what it used to say.
+        edited.delete(key);
+        const fromSeed = seedPhases[id]?.[key];
+        if (fromSeed === undefined) delete phase[key];
+        else phase[key] = structuredClone(fromSeed);
+      } else {
+        phase[key] = key === 'analyses' ? [patch[key]].flat().map(String) : patch[key];
+        edited.add(key);
+      }
+    }
+    if (edited.size > 0) phase.edited = [...edited];
+    else delete phase.edited;
     return phase;
   });
 }
@@ -628,6 +703,67 @@ export function saveAssessment({ memberId, weekId, ratings = {}, note = '', stat
       else row.ratings[competencyId] = rating;
     }
     row.note = String(note ?? '').trim();
+    row.status = status;
+    row.submittedAt = status === 'submitted' ? row.submittedAt ?? new Date().toISOString() : null;
+    row.updatedAt = new Date().toISOString();
+    return row;
+  });
+}
+
+// --- بازبینی TPM ------------------------------------------------------------
+//
+// قرینه‌ی saveAssessment، با دو فرق عمدی:
+//
+//   - کلیدش (نفر، هفته، TPM) است و در مجموعه‌ی دیگری می‌نشیند، پس رأی TPM هیچ‌وقت روی رأی
+//     منتور نمی‌افتد و برعکس.
+//   - به‌جای یک `note`، سه یادداشتِ برچسب‌دار. یک جعبه‌ی خالی یا خالی می‌ماند یا همه‌چیز در
+//     آن قاطی می‌شود؛ تفکیک این‌جا یعنی در صفحه‌ی مسئول برنامه هم تفکیک‌شده درمی‌آید.
+export function listReviews() {
+  return state.reviews;
+}
+
+export function findReview(memberId, weekId, author) {
+  return (
+    state.reviews.find(
+      (r) => r.memberId === memberId && r.weekId === Number(weekId) && r.author === author,
+    ) ?? null
+  );
+}
+
+export function saveReview({ memberId, weekId, ratings = {}, notes = {}, status = 'draft' }, actor) {
+  const found = findMemberTeam(memberId);
+  if (!found) return null;
+  if (!ASSESSMENT_STATUSES.includes(status)) return null;
+
+  return mutate(() => {
+    let row = findReview(memberId, weekId, actor.user);
+    if (!row) {
+      row = {
+        id: randomUUID(),
+        memberId,
+        teamId: found.team.id,
+        weekId: Number(weekId),
+        author: actor.user,
+        ratings: {},
+        notes: {},
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+        submittedAt: null,
+      };
+      state.reviews.push(row);
+    }
+
+    for (const [metricId, value] of Object.entries(ratings)) {
+      const rating = cleanRating(value);
+      // پاک‌کردن یک انتخاب هم باید ممکن باشد: null یعنی «هنوز جواب نداده‌ام».
+      if (rating === undefined) delete row.ratings[metricId];
+      else row.ratings[metricId] = rating;
+    }
+    for (const [noteId, value] of Object.entries(notes)) {
+      const text = String(value ?? '').trim();
+      if (text) row.notes[noteId] = text;
+      else delete row.notes[noteId];
+    }
     row.status = status;
     row.submittedAt = status === 'submitted' ? row.submittedAt ?? new Date().toISOString() : null;
     row.updatedAt = new Date().toISOString();

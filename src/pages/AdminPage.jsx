@@ -3,6 +3,7 @@ import { ADMIN_TEXT } from '../content/admin';
 import { LIVE, api, readToken, writeToken } from '../lib/api';
 import { faDigits } from '../lib/time';
 import HeroNebula from '../components/HeroNebula';
+import PhaseTextEditor from '../components/PhaseTextEditor';
 import WeekTextEditor from '../components/WeekTextEditor';
 import { BoltIcon, CheckIcon, FlagIcon, LockIcon } from '../components/icons';
 
@@ -93,6 +94,7 @@ function PhaseStrip({ phases, weeks, onChange }) {
             >
               {open ? t.lockIt : t.openIt}
             </button>
+            <PhaseTextEditor phase={phase} onChange={onChange} />
           </article>
         );
       })}

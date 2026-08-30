@@ -14,6 +14,14 @@ services:
       STAFF_PASSWORD_TARKASHVAND: ${STAFF_PASSWORD_TARKASHVAND:-}
       STAFF_PASSWORD_AMIR: ${STAFF_PASSWORD_AMIR:-}
       STAFF_PASSWORD_LEAD: ${STAFF_PASSWORD_LEAD:-}
+      # TPMها. عمداً روی MENTOR_PASSWORD نمی‌افتند — دو فانل جدا نباید یک رمز مشترک داشته
+      # باشند، وگرنه هر منتوری می‌تواند به‌عنوان TPM وارد شود.
+      TPM_PASSWORD: ${TPM_PASSWORD:-}
+      # اعلام مناسبت‌ها در گروه بله. بدون این دو، بات خاموش است و چیزی عوض نمی‌شود.
+      # توکن فقط در .env روی سرور می‌نشیند — این ریپو عمومی است.
+      BALE_BOT_TOKEN: ${BALE_BOT_TOKEN:-}
+      BALE_CHAT_ID: ${BALE_CHAT_ID:-}
+      ANNOUNCE_DRY_RUN: ${ANNOUNCE_DRY_RUN:-}
     volumes:
       # The roadmap state lives here. Back this up and you have backed up everything.
       - roadmap-data:/data

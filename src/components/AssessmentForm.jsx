@@ -23,7 +23,13 @@ function faDigit(n) {
   return String(n).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
 }
 
-function CompetencyRow({ competency, value, onPick }) {
+// یک ردیفِ معیار: ۱ ۲ ۳ ۴ و «مشاهده نکردم»، با توضیحِ سطح‌ها که بسته باز می‌شود.
+//
+// export شده چون فرمِ TPM هم دقیقاً همین ردیف را می‌خواهد. آن فرم یادداشتِ متفاوتی دارد
+// (سه جعبه‌ی برچسب‌دار به‌جای یکی) پس کلِ این فایل را دوباره استفاده نمی‌کند، ولی این تکه —
+// که سطح‌ها و NOT_OBSERVED و حالتِ انتخاب‌شده را درست نگه می‌دارد — نباید دو نسخه داشته
+// باشد.
+export function CompetencyRow({ competency, value, onPick }) {
   const [open, setOpen] = useState(false);
   const chosen = competency.levels.find((l) => l.n === value);
 

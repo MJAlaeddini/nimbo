@@ -13,8 +13,10 @@ import {
 } from './auth.js';
 import { fullRoadmap, publicRoadmap } from './public.js';
 import { listBackups, snapshotNow, startDailyBackups } from './backup.js';
+import { startAnnouncer } from './announce.js';
 import { SHEETS } from './sheets.js';
 import { staffBoard } from './staff.js';
+import { tpmBoard } from './tpm.js';
 import * as store from './store.js';
 import { checkLogin, loginFailed, loginKeys, loginSucceeded } from './throttle.js';
 
@@ -42,6 +44,9 @@ if (ORIGIN) {
 store.init();
 // One copy of the data file a day, kept on the same volume, thirty days deep.
 startDailyBackups();
+// Announcements to the participants' Bale group. Silent unless a token and a chat id are
+// in the environment, so nothing changes for anyone who has not set them.
+startAnnouncer();
 
 const ok = (res, value) => (value ? res.json(value) : res.status(404).json({ error: 'not found' }));
 
@@ -132,6 +137,24 @@ app.put('/api/staff/assessments', staffOnly, (req, res) => {
 
   const saved = store.saveAssessment(req.body ?? {}, req.staff);
   return saved ? res.json(saved) : res.status(400).json({ error: 'bad assessment' });
+});
+
+// --- TPM: جلسه‌ی بازبینی ------------------------------------------------------
+//
+// فانلِ جدا، مسیرِ جدا. `staffOnly` بالا `requireRole('mentor', 'lead')` است، پس یک TPM
+// هیچ‌کدام از مسیرهای /api/staff/* را نمی‌گیرد؛ و این‌جا هم منتور راه ندارد.
+const tpmOnly = requireRole('tpm');
+const tpmOrLead = requireRole('tpm', 'lead');
+
+app.get('/api/tpm/board', tpmOrLead, (req, res) => res.json(tpmBoard(req.staff)));
+
+app.put('/api/tpm/reviews', tpmOnly, (req, res) => {
+  // نفر باید واقعاً وجود داشته باشد. برخلاف پنل منتور، اسکوپِ تیمی نیست: هر TPM در جلسه‌ی
+  // بازبینی همه‌ی تیم‌ها را می‌بیند.
+  if (!store.memberTeamId(req.body?.memberId)) return res.status(400).json({ error: 'unknown member' });
+
+  const saved = store.saveReview(req.body ?? {}, req.staff);
+  return saved ? res.json(saved) : res.status(400).json({ error: 'bad review' });
 });
 
 app.post('/api/staff/observations', staffOnly, (req, res) => {

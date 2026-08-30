@@ -37,7 +37,11 @@ const envKey = (user) => `STAFF_PASSWORD_${String(user).toUpperCase().replace(/[
 function staffSecret(account) {
   const own = process.env[envKey(account.user)];
   if (own) return own;
-  return account.role === 'lead' ? process.env.LEAD_PASSWORD ?? '' : process.env.MENTOR_PASSWORD ?? '';
+  if (account.role === 'lead') return process.env.LEAD_PASSWORD ?? '';
+  // TPMها روی MENTOR_PASSWORD نمی‌افتند: دو گروه مختلف با دو فانل جدا نباید یک رمز مشترک
+  // داشته باشند، وگرنه هر منتوری می‌تواند به‌عنوان TPM وارد شود.
+  if (account.role === 'tpm') return process.env.TPM_PASSWORD ?? '';
+  return process.env.MENTOR_PASSWORD ?? '';
 }
 
 export function staffConfigured(accounts) {

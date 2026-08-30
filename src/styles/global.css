@@ -1814,3 +1814,56 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
   .ng-note{margin-inline-start:0}
   .learn-guide{margin-inline-start:0}
 }
+
+/* --- فرم و میزِ TPM ---------------------------------------------------------- */
+/* یادداشتِ به‌تفکیک، بسته. صد و هفده فرم در یک جلسه یعنی هرچیزی که باز باشد یک تعهد
+   می‌سازد؛ این باید یک خط باشد تا کسی که فقط امتیاز می‌دهد اصلاً با آن روبه‌رو نشود. */
+.rv-notes{border:1px solid var(--line);border-radius:13px;background:rgba(13,5,24,.3);overflow:hidden}
+.rv-notes-toggle{display:flex;align-items:center;gap:10px;width:100%;padding:12px 15px;border:0;background:none;color:var(--lav);font:inherit;font-size:.82rem;cursor:pointer;text-align:right}
+.rv-notes-toggle:hover{color:var(--ink)}
+.rv-notes-toggle b{margin-inline-start:auto;color:var(--lav-dim);font-size:1rem;font-weight:400}
+.rv-notes-toggle i{padding:1px 8px;border-radius:99px;background:rgba(245,166,35,.16);color:var(--gold);font-size:.7rem;font-style:normal}
+.rv-notes-body{display:grid;gap:14px;padding:0 15px 15px}
+.rv-note label{display:block;margin-bottom:6px;color:var(--ink);font-size:.82rem}
+.rv-note label i{color:var(--lav-dim);font-size:.72rem;font-style:normal;font-weight:300}
+.rv-note textarea{width:100%;padding:9px 11px;border:1px solid var(--line-strong);border-radius:10px;background:rgba(13,5,24,.5);color:var(--ink);font:inherit;font-size:.84rem;line-height:1.8;resize:vertical}
+.rv-note textarea:focus{outline:2px solid var(--purple-glow);outline-offset:1px}
+
+/* یادداشت‌های جمع‌شده در پنل مسئول برنامه، هر برچسب زیر تیتر خودش. */
+.rv-collected{margin-top:18px}
+.rv-collected .drill-week{color:var(--lav);font-size:.76rem}
+
+/* میزِ TPM همان قابِ میزِ منتور را دارد، فقط بدون نشانِ تیم — TPM مالِ یک تیم نیست. */
+.tpm .mentor-hero{grid-template-columns:1fr auto}
+.tpm .mentor-hero-latin{color:var(--gold)}
+
+@media (max-width:600px){
+  .rv-notes-toggle{font-size:.8rem}
+}
+
+/* فهرست نفراتِ میزِ TPM. قابِ `squad` منتور یک شبکه‌ی کارت است و این‌جا کارت لازم نیست —
+   فقط اسم، حالت، و یک دکمه، با فاصله‌ای که آن سه را از هم جدا نگه دارد. */
+.rvlist{list-style:none;display:grid;gap:8px}
+.rvlist li{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 15px;border:1px solid var(--line);border-radius:12px;background:rgba(13,5,24,.35)}
+.rvlist li.done{border-color:rgba(124,224,163,.28)}
+.rvlist-name{display:flex;align-items:baseline;gap:9px;min-width:0}
+.rvlist-name strong{color:var(--ink);font-size:.92rem;font-weight:600}
+.rvlist-name i{color:var(--lav-dim);font-size:.72rem;font-style:normal}
+.rvlist-state{margin-inline-start:auto;padding:2px 10px;border-radius:99px;background:rgba(182,154,214,.12);color:var(--lav-dim);font-size:.72rem}
+.rvlist-state.on{background:rgba(124,224,163,.16);color:var(--ok)}
+.rvlist li .staff-link{flex:0 0 auto}
+
+/* کشوی «متن فاز» داخل کارت فاز.
+   کارت‌ها یک شبکه‌ی سه‌ستونه‌اند و `justify-items:start` دارند، پس بدون این، جعبه‌ها به
+   اندازه‌ی محتوایشان جمع می‌شوند؛ و `overflow:hidden` کارت، کشوی باز را می‌بُرد. */
+.adm-phase .adm-text{width:100%}
+.adm-phase.editing{overflow:visible}
+.adm-phase .adm-text-body{width:100%}
+.adm-phase .adm-text-body textarea{min-height:2.2rem}
+
+/* کارتی که کشویش باز است تمام عرض را می‌گیرد: در یک‌سومِ عرض، ویرایش یک پاراگراف عذاب است. */
+.adm-phases:has(.adm-text-body){grid-template-columns:1fr}
+@media (min-width:900px){
+  .adm-phases{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .adm-phases:has(.adm-text-body){grid-template-columns:1fr}
+}
