@@ -53,7 +53,7 @@ export default function WeekPage() {
   return (
     <>
       <section className="hero week-hero">
-        <HeroCanvas variant="orbit" />
+        <HeroCanvas variant="path" />
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> برنامه‌ی هفته‌ها · <span className="mono">WEEK {faDigits(weekNumber)}</span>

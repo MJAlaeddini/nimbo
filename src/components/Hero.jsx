@@ -4,7 +4,7 @@ import HeroCanvas from './HeroCanvas';
 export default function Hero({ openCount, total, countdownLabel }) {
   return (
     <section className="hero" id="top">
-      <HeroCanvas variant="aurora" />
+      <HeroCanvas variant="warmup" />
       <div className="wrap inner">
         <span className="eyebrow">
           <span className="dot" /> پیش از شروع · <span className="mono">GETTING READY</span>

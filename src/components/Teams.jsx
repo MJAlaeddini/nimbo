@@ -21,7 +21,7 @@ export default function Teams() {
   return (
     <>
       <section className="hero">
-        <HeroCanvas variant="orbit" />
+        <HeroCanvas variant="network" />
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> <span className="mono">{TEAMS_TEXT.kicker}</span>

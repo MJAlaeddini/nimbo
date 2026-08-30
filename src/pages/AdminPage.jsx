@@ -385,7 +385,7 @@ export default function AdminPage() {
   return (
     <>
       <section className="hero">
-        <HeroCanvas variant="orbit" />
+        <HeroCanvas variant="grid" />
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> {hero.eyebrow} · <span className="mono">{hero.eyebrowMono}</span>

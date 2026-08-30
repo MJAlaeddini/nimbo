@@ -88,7 +88,7 @@ export default function Syllabus() {
   return (
     <>
       <section className="hero">
-        <HeroCanvas variant="orbit" />
+        <HeroCanvas variant="topics" />
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> یکشنبه‌ها و سه‌شنبه‌ها · <span className="mono">{SYLLABUS_TEXT.kicker}</span>

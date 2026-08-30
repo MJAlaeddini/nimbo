@@ -27,7 +27,7 @@ export default function TalksPage() {
   return (
     <>
       <section className="hero">
-        <HeroCanvas variant="orbit" />
+        <HeroCanvas variant="dialogue" />
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> یکشنبه‌ها · <span className="mono">EXPERT TALK</span>
