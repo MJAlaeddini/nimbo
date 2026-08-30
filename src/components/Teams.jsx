@@ -1,6 +1,6 @@
 import { ACCOUNTS, TEAMS, TEAMS_TEXT } from '../content/people';
 import { PICK_TEXT, SCHEDULE, TOPICS } from '../content/syllabus';
-import HeroNebula from './HeroNebula';
+import HeroCanvas from './HeroCanvas';
 import { SparkIcon } from './icons';
 import { fmtDate, fmtWeekday } from '../lib/time';
 
@@ -21,7 +21,7 @@ export default function Teams() {
   return (
     <>
       <section className="hero">
-        <HeroNebula />
+        <HeroCanvas variant="orbit" />
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> <span className="mono">{TEAMS_TEXT.kicker}</span>

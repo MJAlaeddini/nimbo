@@ -1,10 +1,10 @@
 import { faDigits } from '../lib/time';
-import HeroNebula from './HeroNebula';
+import HeroCanvas from './HeroCanvas';
 
 export default function Hero({ openCount, total, countdownLabel }) {
   return (
     <section className="hero" id="top">
-      <HeroNebula />
+      <HeroCanvas variant="aurora" />
       <div className="wrap inner">
         <span className="eyebrow">
           <span className="dot" /> پیش از شروع · <span className="mono">GETTING READY</span>

@@ -45,8 +45,9 @@ nav.mainnav a:hover{color:var(--ink);background:rgba(182,154,214,.08)}
 nav.mainnav a.active{color:var(--ink);background:rgba(245,166,35,.14)}
 /* hero */
 .hero{position:relative;padding:104px 0 68px;overflow:hidden}
-/* ذرات نبولا (HeroNebula.jsx) جای گلوی ثابتِ قبلی را گرفته‌اند. */
-.hero-nebula{position:absolute;inset:0;z-index:0;display:block;width:100%;height:100%;pointer-events:none}
+/* پس‌زمینه‌ی three.js (HeroCanvas.jsx) جای گلوی ثابتِ قبلی را گرفته؛ کدام variant بسته
+   به صفحه فرق می‌کند. */
+.hero-canvas{position:absolute;inset:0;z-index:0;display:block;width:100%;height:100%;pointer-events:none}
 .hero .inner{position:relative;z-index:1}
 .eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:.86rem;letter-spacing:1px;color:var(--gold);border:1px solid var(--line-strong);border-radius:999px;padding:7px 16px;margin-bottom:26px}
 .eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold);animation:pulse 2.4s ease-in-out infinite}

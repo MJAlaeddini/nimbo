@@ -5,7 +5,7 @@ import { TOTAL_WEEKS, weekStartISO, weekStatus } from '../content/schedule';
 import { getWeekTheme } from '../content/weeks';
 import { useWeekEvents } from '../hooks/useWeekEvents';
 import { fmtDate, faDigits } from '../lib/time';
-import HeroNebula from '../components/HeroNebula';
+import HeroCanvas from '../components/HeroCanvas';
 import WeekEvent from '../components/WeekEvent';
 
 const STATUS_LABEL = {
@@ -53,7 +53,7 @@ export default function WeekPage() {
   return (
     <>
       <section className="hero week-hero">
-        <HeroNebula />
+        <HeroCanvas variant="orbit" />
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> برنامه‌ی هفته‌ها · <span className="mono">WEEK {faDigits(weekNumber)}</span>

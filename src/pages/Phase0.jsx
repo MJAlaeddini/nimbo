@@ -8,8 +8,9 @@ import { PROJECT, ROADMAP_TEXT } from '../content/bootcamp';
 import { useRoadmap } from '../hooks/useRoadmap';
 import { useTab } from '../hooks/useTab';
 import { writeToken } from '../lib/api';
+import { faDigits } from '../lib/time';
 import Hero from '../components/Hero';
-import HeroNebula from '../components/HeroNebula';
+import HeroCanvas from '../components/HeroCanvas';
 import Briefing from '../components/Briefing';
 import Timeline from '../components/Timeline';
 import PhaseBoard from '../components/PhaseBoard';
@@ -27,6 +28,8 @@ export default function Phase0() {
   const phase = usePhaseTimeline(missions, CONFIG, PREVIEW_MODE);
   const { phases, weeks, preview } = useRoadmap();
   const [tab, pick] = useTab();
+  const openWeeks = weeks.filter((w) => w.status !== 'locked').length;
+  const activeWeek = weeks.find((w) => w.status === 'active');
   // A link straight to a week opens on the tab that holds it.
   useEffect(() => {
     if (weekSlug) pick('roadmap');
@@ -70,7 +73,7 @@ export default function Phase0() {
       {tab === 'roadmap' && (
         <>
           <section className="hero">
-            <HeroNebula />
+            <HeroCanvas variant="nebula" />
             <div className="wrap inner">
               <span className="eyebrow">
                 <span className="dot" /> {ROADMAP_TEXT.hero.eyebrow} · <span className="mono">{ROADMAP_TEXT.hero.eyebrowMono}</span>
@@ -80,6 +83,23 @@ export default function Phase0() {
                 {ROADMAP_TEXT.hero.title} <b>{ROADMAP_TEXT.hero.titleAccent}</b>
               </h1>
               <p className="tagline">{ROADMAP_TEXT.hero.tagline}</p>
+              <div className="launch-status">
+                <div className="ls-block">
+                  <span className="ls-label">هفته‌ی باز</span>
+                  <span className="ls-value gold tnum">
+                    {faDigits(openWeeks)} / {faDigits(weeks.length)}
+                  </span>
+                </div>
+                {activeWeek && (
+                  <>
+                    <div className="ls-sep" />
+                    <div className="ls-block">
+                      <span className="ls-label">هفته‌ی جاری</span>
+                      <span className="ls-value tnum">هفته‌ی {faDigits(activeWeek.id)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </section>
 

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { PREVIEW_MODE } from '../config';
 import { TOTAL_WEEKS, WEEK_EVENTS, weekEventDate, isWeekEventOpen } from '../content/schedule';
 import { getWeekContent } from '../content/weeks';
-import HeroNebula from '../components/HeroNebula';
+import HeroCanvas from '../components/HeroCanvas';
 import { useNow } from '../hooks/useNow';
 import { faDigits, fmtDate } from '../lib/time';
 
@@ -27,7 +27,7 @@ export default function TalksPage() {
   return (
     <>
       <section className="hero">
-        <HeroNebula />
+        <HeroCanvas variant="orbit" />
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> یکشنبه‌ها · <span className="mono">EXPERT TALK</span>
