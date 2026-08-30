@@ -5,10 +5,12 @@ import { parsePhaseMarkdown } from '../lib/markdown';
 import { CONFIG, PREVIEW_MODE } from '../config';
 import { usePhaseTimeline } from '../hooks/usePhaseTimeline';
 import { PROJECT, ROADMAP_TEXT } from '../content/bootcamp';
+import { TOTAL_WEEKS, weekStartISO } from '../content/schedule';
 import { useRoadmap } from '../hooks/useRoadmap';
+import { useNow } from '../hooks/useNow';
 import { useTab } from '../hooks/useTab';
 import { writeToken } from '../lib/api';
-import { faDigits } from '../lib/time';
+import { faDigits, formatCountdown } from '../lib/time';
 import Hero from '../components/Hero';
 import HeroCanvas from '../components/HeroCanvas';
 import Briefing from '../components/Briefing';
@@ -28,8 +30,18 @@ export default function Phase0() {
   const phase = usePhaseTimeline(missions, CONFIG, PREVIEW_MODE);
   const { phases, weeks, preview } = useRoadmap();
   const [tab, pick] = useTab();
+  const now = useNow(1000);
   const openWeeks = weeks.filter((w) => w.status !== 'locked').length;
-  const activeWeek = weeks.find((w) => w.status === 'active');
+  // اولین شنبه‌ای که هنوز نرسیده — همان چیزی که «هفته‌ی بعدی» یعنی، مستقل از اینکه کادر
+  // دستی چه‌وقت قفلش را باز می‌کند.
+  const nextWeekStart = useMemo(() => {
+    for (let w = 1; w <= TOTAL_WEEKS; w++) {
+      const start = new Date(`${weekStartISO(w)}T00:00:00`);
+      if (start > now) return start;
+    }
+    return null;
+  }, [now]);
+  const weekCountdownLabel = nextWeekStart ? formatCountdown(Math.max(0, nextWeekStart.getTime() - now.getTime())) : 'شروع شده';
   // A link straight to a week opens on the tab that holds it.
   useEffect(() => {
     if (weekSlug) pick('roadmap');
@@ -90,15 +102,14 @@ export default function Phase0() {
                     {faDigits(openWeeks)} / {faDigits(weeks.length)}
                   </span>
                 </div>
-                {activeWeek && (
-                  <>
-                    <div className="ls-sep" />
-                    <div className="ls-block">
-                      <span className="ls-label">هفته‌ی جاری</span>
-                      <span className="ls-value tnum">هفته‌ی {faDigits(activeWeek.id)}</span>
-                    </div>
-                  </>
-                )}
+                <div className="ls-sep" />
+                <div className="ls-block">
+                  <span className="ls-label">هفته‌ی بعدی در</span>
+                  <span className="ls-value tnum">{weekCountdownLabel}</span>
+                </div>
+              </div>
+              <div className="dare mono">
+                DARE&nbsp;TO&nbsp;<b>CHANGE</b>
               </div>
             </div>
           </section>
