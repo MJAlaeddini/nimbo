@@ -52,7 +52,9 @@ nav.mainnav a.active{color:var(--ink);background:rgba(245,166,35,.14)}
 .eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:.86rem;letter-spacing:1px;color:var(--gold);border:1px solid var(--line-strong);border-radius:999px;padding:7px 16px;margin-bottom:26px}
 .eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold);animation:pulse 2.4s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
-.phase-num{font-family:"Vazirmatn",system-ui,sans-serif;color:var(--lav);font-size:.95rem;letter-spacing:3px;margin-bottom:6px}
+/* فاصله‌ی بیشتر از حد معمولِ بین متن‌ها، چون تیترِ زیرش با line-height تنگِ ۰.۹۲
+   نوشته می‌شود و حروفِ بلندش (مثل «أ») بدون این فاصله وارد همین خط می‌شدند. */
+.phase-num{font-family:"Vazirmatn",system-ui,sans-serif;color:var(--lav);font-size:.95rem;letter-spacing:3px;margin-bottom:22px}
 h1.display{font-size:var(--fs-display);font-weight:800;line-height:.92;letter-spacing:-2px;color:var(--ink);text-shadow:0 0 60px rgba(138,52,192,.5)}
 h1.display b{color:var(--gold)}
 .tagline{font-size:clamp(1.1rem,2.6vw,1.55rem);color:var(--lav);font-weight:400;margin-top:18px;max-width:640px}
