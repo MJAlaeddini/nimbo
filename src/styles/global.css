@@ -1390,10 +1390,12 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
 .syl-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;transition:border-color .22s,box-shadow .22s}
 .syl-card:hover{border-color:var(--line-strong)}
 .syl-card.open{border-color:var(--gold);box-shadow:var(--shadow)}
-.syl-head{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:16px;width:100%;padding:18px 22px 6px;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.syl-head{display:grid;grid-template-columns:auto auto 1fr auto auto;align-items:center;gap:16px;width:100%;padding:18px 22px 6px;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
 /* شماره‌ی موضوع، درشت و کم‌رنگ: جای ترتیب را می‌گیرد بدون اینکه با عنوان رقابت کند. */
 .syl-n{font-size:1.6rem;font-weight:900;color:var(--lav-dim);opacity:.55;line-height:1}
 .syl-card.open .syl-n{color:var(--gold);opacity:1}
+/* لوگوی خودِ ابزار(ها) — بعضی سرفصل‌ها دوتایند (مثل Maven / Gradle)، پس فاصله می‌خواهد. */
+.syl-logos{display:flex;align-items:center;gap:6px;flex:0 0 auto}
 .syl-id{display:flex;flex-direction:column;gap:2px;min-width:0}
 .syl-id strong{color:var(--ink);font-size:1.12rem;font-weight:700}
 .syl-id i{color:var(--lav);font-size:.78rem;font-style:normal;letter-spacing:.4px}
@@ -1432,7 +1434,7 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
 .mm-note{fill:var(--lav-dim);font-size:10px;font-family:inherit}
 
 @media(max-width:640px){
-  .syl-head{grid-template-columns:auto 1fr auto;gap:12px;padding:16px 16px 6px}
+  .syl-head{grid-template-columns:auto auto 1fr auto;gap:12px;padding:16px 16px 6px}
   .syl-count{display:none}
   .syl-goal,.syl-body{padding-left:16px;padding-right:16px}
   .shape li{grid-template-columns:1fr;gap:8px}
