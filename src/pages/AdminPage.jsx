@@ -381,12 +381,12 @@ export default function AdminPage() {
 
   return (
     <>
-      <section className="hero" style={{ padding: '72px 0 42px' }}>
+      <section className="hero">
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> {hero.eyebrow} · <span className="mono">{hero.eyebrowMono}</span>
           </span>
-          <h1 className="display" style={{ fontSize: 'clamp(2.2rem,6vw,4rem)' }}>
+          <h1 className="display">
             {hero.title} <b>{hero.titleAccent}</b>
           </h1>
           <p className="tagline">{hero.tagline}</p>
