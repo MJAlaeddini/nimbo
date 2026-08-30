@@ -61,7 +61,9 @@ export default function Teams() {
                   <ul className="teamcard-people">
                     {team.members.map((m) => (
                       <li key={m.id}>
-                        <span>{m.name}</span>
+                        <span>
+                          <span aria-hidden="true">{m.emoji}</span> {m.name}
+                        </span>
                         {m.seat && <i>{m.seat}</i>}
                       </li>
                     ))}
