@@ -16,6 +16,7 @@ let state = null;
 // put the release's wording back immediately, instead of leaving the field empty until the
 // next restart happens to reload it.
 let seedWeeks = [];
+let seedPhases = {};
 
 // Has anyone actually done anything with this person yet?
 function untouched(member) {
@@ -71,6 +72,7 @@ function load() {
   // seed's own objects, so editing a week in the panel would rewrite the copy we keep to
   // revert to — and "undo" would restore the edit it was meant to undo.
   seedWeeks = structuredClone(seed.weeks ?? []);
+  seedPhases = structuredClone(seed.phases ?? {});
   const base = {
     phases: seed.phases ?? {},
     weeks: seed.weeks ?? [],
@@ -95,7 +97,7 @@ function load() {
   // does have — an upgrade must never lose an admin's work.
   const saved = JSON.parse(readFileSync(DATA_FILE, 'utf8'));
   return {
-    phases: Object.keys(saved.phases ?? {}).length > 0 ? saved.phases : base.phases,
+    phases: mergePhases(base.phases, saved.phases),
     weeks: mergeWeeks(base.weeks, saved.weeks),
     challenges: saved.challenges ?? base.challenges,
     assignments: saved.assignments ?? [],
@@ -135,6 +137,47 @@ function load() {
 // this week's text was edited in the panel, in which case that field stays edited — the
 // same bargain the roster and the axes already make.
 const WEEK_OPERATIONAL = ['status'];
+
+// The phases make the same bargain, and they used to make none at all.
+//
+// The rule here was `saved.phases ?? seed`, which is the exact freeze the note above
+// describes: the server writes its whole state on start, so from the second boot the saved
+// copy was never empty and the seed was never read again. A phase's wording could be
+// corrected in the content, deployed, and verified green while the running site kept the
+// old text, with nothing anywhere saying why. Nobody noticed because until now there was
+// no other way to change a phase either — the panel could only open and close them.
+//
+// So: `status` belongs to the panel, because opening a phase is the admin's call and no
+// release should reach in and change it. Everything else comes from the seed unless this
+// phase's text was edited in the panel, in which case that field stays edited.
+const PHASE_OPERATIONAL = ['status'];
+
+function mergePhases(seedMap = {}, savedMap) {
+  if (!savedMap || Object.keys(savedMap).length === 0) return seedMap;
+
+  const merged = {};
+  for (const [id, seedPhase] of Object.entries(seedMap)) {
+    const saved = savedMap[id];
+    if (!saved) {
+      merged[id] = seedPhase;
+      continue;
+    }
+
+    const phase = { ...seedPhase };
+    for (const key of PHASE_OPERATIONAL) if (key in saved) phase[key] = saved[key];
+
+    const edited = Array.isArray(saved.edited) ? saved.edited : [];
+    for (const key of edited) if (key in saved) phase[key] = saved[key];
+    if (edited.length > 0) phase.edited = [...edited];
+
+    merged[id] = phase;
+  }
+
+  // A phase the seed no longer has is kept: dropping it would delete text somebody wrote,
+  // and would orphan every week pointing at it.
+  for (const [id, saved] of Object.entries(savedMap)) if (!merged[id]) merged[id] = saved;
+  return merged;
+}
 
 function mergeWeeks(seedWeeks = [], savedWeeks) {
   if (!Array.isArray(savedWeeks) || savedWeeks.length === 0) return seedWeeks;
@@ -259,11 +302,37 @@ export function listPhases() {
   return state.phases;
 }
 
+// Exactly the fields PhaseBoard renders, and no more. `id` is missing on purpose: weeks
+// point at a phase by it, so letting the panel rewrite it would orphan them.
+const PHASE_FIELDS = ['status', 'code', 'label', 'weeks', 'requirement', 'analysesTitle', 'analyses', 'note'];
+
 export function updatePhase(id, patch) {
   const phase = state.phases[id];
   if (!phase) return null;
   return mutate(() => {
-    if ('status' in patch) phase.status = patch.status === 'open' ? 'open' : 'locked';
+    const edited = new Set(phase.edited ?? []);
+    for (const key of PHASE_FIELDS) {
+      if (!(key in patch)) continue;
+
+      if (key === 'status') {
+        phase.status = patch.status === 'open' ? 'open' : 'locked';
+        continue;
+      }
+
+      if (patch[key] === null) {
+        // Clearing a field hands it back to the release rather than pinning it empty, so a
+        // text edited by mistake can be undone without knowing what it used to say.
+        edited.delete(key);
+        const fromSeed = seedPhases[id]?.[key];
+        if (fromSeed === undefined) delete phase[key];
+        else phase[key] = structuredClone(fromSeed);
+      } else {
+        phase[key] = key === 'analyses' ? [patch[key]].flat().map(String) : patch[key];
+        edited.add(key);
+      }
+    }
+    if (edited.size > 0) phase.edited = [...edited];
+    else delete phase.edited;
     return phase;
   });
 }
