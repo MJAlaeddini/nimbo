@@ -50,7 +50,7 @@
     {
       "id": 1,
       "code": "W1",
-      "status": "locked",
+      "status": "completed",
       "phase": "p1",
       "title": "از کافکا تا پارکت روی HDFS",
       "summary": "اولین قطعه‌ی واقعی پروژه — یه نویسنده‌ی پارکت که کل مسیر استقرارشم خودکار باشه.",
@@ -68,7 +68,7 @@
     {
       "id": 2,
       "code": "W2",
-      "status": "locked",
+      "status": "completed",
       "phase": "p1",
       "title": "مسیر دوم و بلوغ ابزار",
       "summary": "یه صف، دو تا مقصد — و اولین باری که با Spark از داده‌ی خام سؤال می‌پرسید.",
@@ -86,7 +86,7 @@
     {
       "id": 3,
       "code": "W3",
-      "status": "locked",
+      "status": "active",
       "phase": "p1",
       "title": "تموم‌کردن، و ایستادن جلوی سؤال",
       "summary": "دو تا مسیر باید کامل بشن — بعدش باید از تصمیم‌هاتون دفاع کنید.",
@@ -102,6 +102,21 @@
       "milestone": {
         "title": "جلسه‌ی بازبینی TPM — آخر هفته",
         "body": "TPMها می‌آیند، درباره‌ی مؤلفه‌ها و محدودیت‌هایی که رعایت کرده‌اید سؤال می‌کنند، و شما پروژه را ارائه می‌دهید. چیزی که آن‌جا می‌شنوید، ورودی هفته‌ی بعد است."
+      },
+      "prepQuiz": {
+        "title": "قبل از ارائه‌ی فردا، مطمئن باش که جواب این‌ها رو بلدی",
+        "questions": [
+          "چرا داده رو اول می‌ریزیم روی کافکا و مستقیم نمی‌نویسیمش توی HDFS یا StarRocks؟",
+          "فرمت Avro چه فرقی با JSON داره که برای این پروژه انتخاب شده؟",
+          "چرا خروجی رو به‌جای فایل‌های تکی، به‌صورت Parquet روی HDFS می‌نویسیم؟",
+          "StarRocks چه فرقی با PostgreSQL داره و چرا هرکدوم رو برای یه مسیر جدا انتخاب کردیم؟",
+          "توی مسیر Batch، Spark دقیقاً چه نقشی داره و چرا مستقیم روی داده‌ی خام کوئری نمی‌زنیم؟",
+          "Cube Maker چیه و چرا جدول‌های تجمیعی رو از قبل می‌سازه به‌جای اینکه هر بار موقع سؤال حساب کنه؟",
+          "فرق ساختن ایمیج با Jib در مقابل docker build دستی چیه؟",
+          "Jenkins توی پایپ‌لاین دقیقاً از کجا تا کجا رو خودکار می‌کنه؟",
+          "SonarQube چه چیزی رو چک می‌کنه که تست معمولی چک نمی‌کنه؟",
+          "Gerrit چه فرقی با یه PR ساده‌ی گیت‌هاب داره، و چرا بازبینی کد قبل از مرج لازمه؟"
+        ]
       }
     },
     {
@@ -349,6 +364,7 @@
           "id": "m-cirrus-1",
           "name": "اشکان حافظی",
           "seat": "",
+          "avatar": "person",
           "photo": "",
           "verdict": {
             "call": "none",
@@ -360,6 +376,7 @@
           "id": "m-cirrus-2",
           "name": "سبحان بهزادی‌پور",
           "seat": "",
+          "avatar": "person",
           "photo": "",
           "verdict": {
             "call": "none",
@@ -371,6 +388,7 @@
           "id": "m-cirrus-3",
           "name": "پرهام کوت‌زری",
           "seat": "",
+          "avatar": "person",
           "photo": "",
           "verdict": {
             "call": "none",
@@ -391,6 +409,7 @@
           "id": "m-stratus-1",
           "name": "علیرضا خداپناه",
           "seat": "",
+          "avatar": "person",
           "photo": "",
           "verdict": {
             "call": "none",
@@ -402,6 +421,7 @@
           "id": "m-stratus-2",
           "name": "علی سبزی",
           "seat": "",
+          "avatar": "person",
           "photo": "",
           "verdict": {
             "call": "none",
@@ -413,6 +433,7 @@
           "id": "m-stratus-3",
           "name": "علی بختیاری مقدم",
           "seat": "",
+          "avatar": "person",
           "photo": "",
           "verdict": {
             "call": "none",
@@ -433,6 +454,7 @@
           "id": "m-cumulus-1",
           "name": "مهدی مختاری",
           "seat": "",
+          "avatar": "person",
           "photo": "",
           "verdict": {
             "call": "none",
@@ -444,6 +466,7 @@
           "id": "m-cumulus-2",
           "name": "سبحان ارشدی",
           "seat": "",
+          "avatar": "person",
           "photo": "",
           "verdict": {
             "call": "none",
@@ -455,6 +478,7 @@
           "id": "m-cumulus-3",
           "name": "محمدامین جنگی",
           "seat": "",
+          "avatar": "person",
           "photo": "",
           "verdict": {
             "call": "none",
@@ -475,6 +499,7 @@
           "id": "m-nimbus-1",
           "name": "سیداحمد رکنی حسینی",
           "seat": "",
+          "avatar": "elder",
           "photo": "",
           "verdict": {
             "call": "none",
@@ -486,6 +511,7 @@
           "id": "m-nimbus-2",
           "name": "حمید شفیع‌زاده",
           "seat": "",
+          "avatar": "child",
           "photo": "",
           "verdict": {
             "call": "none",
@@ -497,6 +523,7 @@
           "id": "m-nimbus-3",
           "name": "محمدحسین پایدار",
           "seat": "",
+          "avatar": "person",
           "photo": "",
           "verdict": {
             "call": "none",
@@ -508,6 +535,7 @@
           "id": "m-nimbus-4",
           "name": "پارسا نصیری",
           "seat": "",
+          "avatar": "person",
           "photo": "",
           "verdict": {
             "call": "none",
