@@ -30,14 +30,14 @@ h2.sec-title{font-size:clamp(1.7rem,4vw,2.6rem);font-weight:800;letter-spacing:-
 .brand{display:flex;align-items:center;gap:12px;font-weight:700;flex:0 0 auto;text-decoration:none}
 .brand .lockup{font-size:1.15rem;letter-spacing:.5px;color:var(--gold)}
 .brand .sub{font-size:.72rem;color:var(--lav);font-weight:400}
-.nimbo-ring{width:34px;height:34px;flex:0 0 auto}
 nav.mainnav{display:flex;gap:4px;flex:1;overflow-x:auto;scrollbar-width:none}
 /* روی موبایل، پنج تب در یک نوار افقیِ اسکرول‌دار جا می‌شوند ولی فقط دوتاشان دیده
    می‌شوند و چون اسکرول‌بار پنهان است هیچ نشانه‌ای هم ندارد که بقیه‌ای هست.
    نوار تب‌ها می‌رود خط خودش، زیر برند، و آن‌جا هر پنج‌تا جا می‌شوند. */
 @media (max-width:720px){
-  nav.mainnav{flex:1 0 100%;flex-wrap:wrap;justify-content:center;overflow-x:visible;gap:5px}
-  nav.mainnav .navtab{font-size:.8rem;padding:6px 10px}
+  nav.mainnav{flex:1 0 100%;flex-wrap:wrap;justify-content:center;overflow-x:visible;gap:8px}
+  /* پدینگ عمودی طوری که قد لمسی تب از ۴۴ پیکسل کمتر نشود، حتی با فونت کوچک‌تر روی موبایل. */
+  nav.mainnav .navtab{font-size:.8rem;padding:11px 12px}
 }
 nav.mainnav::-webkit-scrollbar{display:none}
 nav.mainnav a{white-space:nowrap;font-size:.9rem;color:var(--lav);text-decoration:none;padding:8px 12px;border-radius:9px;transition:.18s}
@@ -45,13 +45,16 @@ nav.mainnav a:hover{color:var(--ink);background:rgba(182,154,214,.08)}
 nav.mainnav a.active{color:var(--ink);background:rgba(245,166,35,.14)}
 /* hero */
 .hero{position:relative;padding:104px 0 68px;overflow:hidden}
-.hero .bigring{position:absolute;top:50%;left:50%;translate:-50% -50%;width:min(760px,120vw);height:min(760px,120vw);z-index:0;opacity:.5;animation:spin 90s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* پس‌زمینه‌ی three.js (HeroCanvas.jsx) جای گلوی ثابتِ قبلی را گرفته؛ کدام variant بسته
+   به صفحه فرق می‌کند. */
+.hero-canvas{position:absolute;inset:0;z-index:0;display:block;width:100%;height:100%;pointer-events:none}
 .hero .inner{position:relative;z-index:1}
 .eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:.86rem;letter-spacing:1px;color:var(--gold);border:1px solid var(--line-strong);border-radius:999px;padding:7px 16px;margin-bottom:26px}
 .eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold);animation:pulse 2.4s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
-.phase-num{font-family:"Vazirmatn",system-ui,sans-serif;color:var(--lav);font-size:.95rem;letter-spacing:3px;margin-bottom:6px}
+/* فاصله‌ی بیشتر از حد معمولِ بین متن‌ها، چون تیترِ زیرش با line-height تنگِ ۰.۹۲
+   نوشته می‌شود و حروفِ بلندش (مثل «أ») بدون این فاصله وارد همین خط می‌شدند. */
+.phase-num{font-family:"Vazirmatn",system-ui,sans-serif;color:var(--lav);font-size:.95rem;letter-spacing:3px;margin-bottom:22px}
 h1.display{font-size:var(--fs-display);font-weight:800;line-height:.92;letter-spacing:-2px;color:var(--ink);text-shadow:0 0 60px rgba(138,52,192,.5)}
 h1.display b{color:var(--gold)}
 .tagline{font-size:clamp(1.1rem,2.6vw,1.55rem);color:var(--lav);font-weight:400;margin-top:18px;max-width:640px}
@@ -73,7 +76,7 @@ h1.display b{color:var(--gold)}
 .brief-card p{color:var(--lav);font-size:.96rem}
 .brief-card .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
 .chip{font-size:.78rem;color:var(--lav);background:rgba(182,154,214,.08);border:1px solid var(--line-strong);border-radius:6px;padding:3px 9px}
-.chip.tool{font-family:"Vazirmatn",system-ui,sans-serif;color:var(--gold-lit);background:rgba(245,166,35,.1);border-color:rgba(245,166,35,.25)}
+.chip.tool{display:inline-flex;align-items:center;gap:6px;font-family:"Vazirmatn",system-ui,sans-serif;color:var(--gold-lit);background:rgba(245,166,35,.1);border-color:rgba(245,166,35,.25)}
 .pipeline{margin-top:22px;font-family:"Vazirmatn",system-ui,sans-serif;font-size:.82rem;color:var(--lav);background:var(--void-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;direction:ltr;text-align:center;overflow-x:auto}
 .pipeline b{color:var(--gold)}
 
@@ -163,7 +166,7 @@ footer p{color:var(--lav-dim);font-size:.82rem;margin-top:14px}
   .m-head{flex-wrap:wrap}
   .m-state .lbl{display:none}
 }
-@media (prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto}.hero .bigring{animation:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto}}
 
 /* roadmap grid (home) */
 .roadmap-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
@@ -758,26 +761,23 @@ footer p{color:var(--lav-dim);font-size:.82rem;margin-top:14px}
 .rp-ring{position:relative;width:50px;height:50px;display:grid;place-items:center;flex:0 0 auto}
 .rp-ring::before{content:"";position:absolute;inset:2px;border-radius:50%;background:radial-gradient(circle at 50% 35%,var(--panel),var(--void-2) 70%);border:1px solid var(--line);transition:box-shadow .3s,border-color .3s}
 .rp-ring>svg{position:absolute;inset:0;width:100%;height:100%}
-.rp-arc{stroke:var(--ring);opacity:.9}
 .rp-ring-accent{stroke:transparent;transition:stroke .3s,opacity .3s}
 .rp-mark{position:relative;display:grid;place-items:center;color:var(--gold)}
 .rp-glyph{font-size:.95rem;font-weight:700}
 
-/* locked: nothing shouts — a dimmer ring, a hairline seal, a thin padlock */
-.status-locked .rp-arc{stroke:var(--lav-dim);opacity:.55}
+/* locked: nothing shouts — a dashed ring (from the badge background), a dim padlock */
 .status-locked .rp-ring::before{background:var(--void-2);border-style:dashed;border-color:rgba(182,154,214,.22)}
 .status-locked .rp-mark{color:var(--lav-dim)}
 .status-locked .rp-title{color:var(--lav-dim);font-weight:400}
 .status-locked .rp-code,.status-locked .rp-state{opacity:.75}
 /* upcoming: written and readable, but visibly not started — dimmer than active, alive unlike locked */
-.status-upcoming .rp-arc{stroke:var(--lav);opacity:.5}
 .status-upcoming .rp-ring::before{border-color:rgba(182,154,214,.28)}
 .status-upcoming .rp-mark{color:var(--lav)}
-.status-upcoming .rp-ring-accent{stroke:var(--phase-color);opacity:.28}
+.status-upcoming .rp-ring-accent{stroke:var(--phase-color);opacity:.5}
 .status-upcoming .rp-title{color:var(--lav)}
 .status-active .rp-ring-accent{stroke:var(--phase-color);opacity:.9}
 .status-active .rp-ring::before{border-color:rgba(245,166,35,.42);box-shadow:0 0 0 4px rgba(245,166,35,.08),0 0 24px rgba(245,166,35,.16)}
-.status-completed .rp-ring-accent{stroke:var(--phase-color);opacity:.4}
+.status-completed .rp-ring-accent{stroke:var(--phase-color);opacity:.55}
 .status-completed .rp-ring::before{background:linear-gradient(160deg,rgba(124,224,163,.15),var(--void-2))}
 .status-completed .rp-mark{color:var(--ok)}
 .rp-item.selected .rp-ring::before{border-color:rgba(245,166,35,.6);box-shadow:0 0 0 5px rgba(245,166,35,.14)}
@@ -824,6 +824,14 @@ footer p{color:var(--lav-dim);font-size:.82rem;margin-top:14px}
 .rp-milestone-kicker{display:inline-flex;align-items:center;gap:7px;color:var(--gold);font-size:.72rem;font-weight:700;letter-spacing:1.2px}
 .rp-milestone strong{color:var(--ink);font-size:1rem}
 .rp-milestone p{margin:0;color:var(--lav);font-size:.9rem;line-height:1.8}
+
+.rp-quiz{margin-top:16px;border:1px solid rgba(245,166,35,.3);border-radius:14px;background:linear-gradient(180deg,rgba(245,166,35,.07),transparent);overflow:hidden}
+.rp-quiz-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:none;border:0;color:var(--gold-lit);font:inherit;font-weight:700;font-size:.92rem;text-align:right;cursor:pointer}
+.rp-quiz-toggle:focus-visible{outline:2px solid var(--gold-lit);outline-offset:-2px}
+.rp-quiz-chev{color:var(--gold);font-size:1.1rem;line-height:1}
+.rp-quiz-list{margin:0 18px 16px;padding-inline-start:22px;color:var(--ink)}
+.rp-quiz-list li{margin:9px 0;font-size:.92rem;line-height:1.8}
+.rp-quiz-list li::marker{color:var(--gold)}
 .rp-deliverable{margin-top:28px;padding:20px 22px;border:1px solid rgba(245,166,35,.34);border-radius:15px;background:linear-gradient(150deg,rgba(245,166,35,.13),rgba(100,28,140,.13));box-shadow:0 18px 40px -30px rgba(245,166,35,.85)}
 .rp-deliverable-label{display:block;margin-bottom:7px;color:var(--gold);font-size:.72rem;font-weight:700;letter-spacing:2px}
 .rp-deliverable p{color:var(--ink);font-size:1rem;line-height:1.85}
@@ -1382,10 +1390,12 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
 .syl-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;transition:border-color .22s,box-shadow .22s}
 .syl-card:hover{border-color:var(--line-strong)}
 .syl-card.open{border-color:var(--gold);box-shadow:var(--shadow)}
-.syl-head{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:16px;width:100%;padding:18px 22px 6px;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.syl-head{display:grid;grid-template-columns:auto auto 1fr auto auto;align-items:center;gap:16px;width:100%;padding:18px 22px 6px;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
 /* شماره‌ی موضوع، درشت و کم‌رنگ: جای ترتیب را می‌گیرد بدون اینکه با عنوان رقابت کند. */
 .syl-n{font-size:1.6rem;font-weight:900;color:var(--lav-dim);opacity:.55;line-height:1}
 .syl-card.open .syl-n{color:var(--gold);opacity:1}
+/* لوگوی خودِ ابزار(ها) — بعضی سرفصل‌ها دوتایند (مثل Maven / Gradle)، پس فاصله می‌خواهد. */
+.syl-logos{display:flex;align-items:center;gap:6px;flex:0 0 auto}
 .syl-id{display:flex;flex-direction:column;gap:2px;min-width:0}
 .syl-id strong{color:var(--ink);font-size:1.12rem;font-weight:700}
 .syl-id i{color:var(--lav);font-size:.78rem;font-style:normal;letter-spacing:.4px}
@@ -1424,7 +1434,7 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
 .mm-note{fill:var(--lav-dim);font-size:10px;font-family:inherit}
 
 @media(max-width:640px){
-  .syl-head{grid-template-columns:auto 1fr auto;gap:12px;padding:16px 16px 6px}
+  .syl-head{grid-template-columns:auto auto 1fr auto;gap:12px;padding:16px 16px 6px}
   .syl-count{display:none}
   .syl-goal,.syl-body{padding-left:16px;padding-right:16px}
   .shape li{grid-template-columns:1fr;gap:8px}
@@ -1476,30 +1486,42 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
   .teamcard-talks li{flex-wrap:wrap;row-gap:2px}
   .teamcard-talks i{width:100%;text-align:left}
 }
-.teamcard{padding:15px 17px;border:1px solid var(--line);border-top:3px solid var(--team-color);border-radius:14px;background:var(--panel)}
-.teamcard header{color:var(--team-color);font-size:1.02rem;font-weight:900;margin-bottom:10px;text-align:left}
+.teamcard{position:relative;overflow:hidden;padding:15px 17px;border:1px solid var(--line);border-top:3px solid var(--team-color);border-radius:14px;background:var(--panel);transition:transform .22s,border-color .22s,box-shadow .22s}
+.teamcard header{display:flex;align-items:center;gap:10px;color:var(--team-color);font-size:1.02rem;font-weight:900;margin-bottom:10px;text-align:left}
 .teamcard ul{list-style:none;display:grid;gap:5px}
 .teamcard li{color:var(--lav);font-size:.83rem}
 /* ستون، تا بلوک ارائه‌ها بتواند با margin-top:auto به کف کارت بچسبد. تیمی که چهار نفر
    دارد کارت را بلندتر می‌کند و بدون این، بلوکِ کارتِ کناری وسط هوا می‌ماند. */
 .teamcard.big{display:flex;flex-direction:column;padding:20px 22px}
 .teamcard.big header{font-size:1.35rem;margin-bottom:14px}
+.teamcard.big:hover{transform:translateY(-3px);border-color:color-mix(in srgb, var(--team-color) 55%, var(--line));box-shadow:0 18px 34px -26px var(--team-color)}
 
-.teamcard-mentor{display:flex;align-items:baseline;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+/* پرتوی نرمِ رنگِ تیم، گوشه‌ی بالا-چپِ کارت — بدون اینکه روی خوانایی متن اثر بگذارد. */
+.teamcard-glow{position:absolute;z-index:0;top:-60px;left:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle, color-mix(in srgb, var(--team-color) 30%, transparent), transparent 70%);pointer-events:none}
+.teamcard.big>*:not(.teamcard-glow){position:relative;z-index:1}
+
+/* حرفِ اول اسمِ لاتینِ تیم، توی یک نشانِ گرد به رنگ خودِ تیم — هویتِ کارت را از فاصله هم
+   می‌شود دید، نه فقط از خطِ رنگیِ بالا. */
+.teamcard-avatar{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:color-mix(in srgb, var(--team-color) 22%, transparent);border:1px solid color-mix(in srgb, var(--team-color) 45%, transparent);color:var(--team-color);font-size:.92rem;font-weight:900;text-transform:uppercase}
+
+.teamcard-mentor{display:flex;align-items:center;gap:7px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line);color:var(--team-color)}
 .teamcard-mentor span{color:var(--lav-dim);font-size:.74rem}
 .teamcard-mentor b{color:var(--ink);font-size:.88rem;font-weight:700}
 
 /* اسم و نقش روی یک خط، با نقش چسبیده به لبه‌ی مقابل — «سرگروه» بدون خواندن پیدا شود. */
 .teamcard-people{gap:8px;margin-bottom:16px}
-.teamcard-people li{display:flex;align-items:baseline;justify-content:space-between;gap:10px;color:var(--ink);font-size:.92rem}
-.teamcard-people i{color:var(--gold);font-size:.7rem;font-style:normal;padding:2px 8px;border:1px solid rgba(245,166,35,.35);border-radius:999px;background:rgba(245,166,35,.08)}
+.teamcard-people li{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 10px;padding:6px 10px;border-radius:9px;color:var(--ink);font-size:.92rem;background:rgba(13,5,24,.28);transition:background .18s}
+.teamcard-people li:hover{background:color-mix(in srgb, var(--team-color) 10%, rgba(13,5,24,.28))}
+.teamcard-person{display:inline-flex;align-items:center;gap:7px}
+.teamcard-person .ico{flex:0 0 auto;color:var(--team-color);opacity:.85}
+.teamcard-people i{color:var(--team-color);font-size:.7rem;font-style:normal;padding:2px 8px;border:1px solid color-mix(in srgb, var(--team-color) 40%, transparent);border-radius:999px;background:color-mix(in srgb, var(--team-color) 12%, transparent)}
 
 .teamcard-talks{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
 .teamcard-talks-title{display:block;margin-bottom:9px;color:var(--lav-dim);font-size:.74rem}
 /* بدون wrap: با wrap، اسم بلندی مثل «Prometheus & Grafana» تاریخ را به خط بعد می‌انداخت و
    ستون تاریخ‌ها به هم می‌ریخت. حالا اسم داخل خودش می‌شکند و تاریخ سر جایش می‌ماند. */
-.teamcard-talks li{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:7px 11px;border-radius:9px;background:rgba(13,5,24,.42)}
-.teamcard-talks b{color:var(--ink);font-size:.84rem;font-weight:700;min-width:0}
+.teamcard-talks li{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:9px;border-right:2px solid color-mix(in srgb, var(--team-color) 55%, transparent);background:rgba(13,5,24,.42)}
+.teamcard-talks b{display:inline-flex;align-items:center;gap:5px;color:var(--ink);font-size:.84rem;font-weight:700;min-width:0}
 .teamcard-talks i{flex:none;color:var(--lav-dim);font-size:.74rem;font-style:normal;white-space:nowrap}
 .teamcard-none{color:var(--lav-dim);font-size:.8rem}
 
@@ -1514,7 +1536,6 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
 .tr-ring{position:relative;width:50px;height:50px;display:grid;place-items:center;flex:0 0 auto}
 .tr-ring::before{content:"";position:absolute;inset:2px;border-radius:50%;background:radial-gradient(circle at 50% 35%,var(--panel),var(--void-2) 70%);border:1px solid var(--line)}
 .tr-ring>svg{position:absolute;inset:0;width:100%;height:100%}
-.tr-arc{stroke:var(--team-color)}
 .tr-ring-accent{stroke:var(--team-color);opacity:.28}
 .tr-mark{position:relative;color:var(--team-color);font-size:.9rem;font-weight:700}
 .tr-when{display:flex;flex-direction:column;gap:1px}

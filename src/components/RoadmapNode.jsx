@@ -53,10 +53,7 @@ export default function RoadmapNode({ week, selected, challenge, connector, onSe
         onClick={sealed ? undefined : () => onSelect(week)}
       >
         <span className="rp-ring">
-          {/* the Nimbo ring motif, same two arcs the brand mark uses */}
           <svg viewBox="0 0 48 48" aria-hidden="true">
-            <path className="rp-arc" d="M10 16 A16 16 0 0 1 38 16" fill="none" strokeWidth="2.2" strokeLinecap="round" />
-            <path className="rp-arc" d="M10 32 A16 16 0 0 0 38 32" fill="none" strokeWidth="2.2" strokeLinecap="round" />
             <circle className="rp-ring-accent" cx="24" cy="24" r="15" fill="none" strokeWidth="1.8" />
           </svg>
           <span className="rp-mark">

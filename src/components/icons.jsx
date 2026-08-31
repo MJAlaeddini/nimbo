@@ -42,6 +42,38 @@ export function BoltIcon({ size = 16 }) {
   );
 }
 
+// آدمِ عمومی — پیش‌فرضِ هر عضو تیم.
+export function PersonIcon({ size = 14 }) {
+  return (
+    <svg className="ico" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="8" r="3.4" />
+      <path d="M5.4 19.5c.7-3.9 3.4-6.2 6.6-6.2s5.9 2.3 6.6 6.2" />
+    </svg>
+  );
+}
+
+// آدمِ مسن — همان آدمِ عمومی، خمیده‌تر و با یک عصا.
+export function ElderIcon({ size = 14 }) {
+  return (
+    <svg className="ico" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="10.3" cy="7.6" r="3" />
+      <path d="M4.8 19.5c.6-3.5 2.8-5.7 5.6-6.1" />
+      <path d="M13.1 13.6c1.7.7 2.9 2.3 3.4 4.2" />
+      <line x1="17.3" y1="12.6" x2="19.4" y2="20" />
+    </svg>
+  );
+}
+
+// بچه — سری بزرگ‌تر و قدی کوتاه‌تر نسبت به بدن، زبانِ رایجِ نمادِ کودک.
+export function ChildIcon({ size = 14 }) {
+  return (
+    <svg className="ico" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="7.2" r="4" />
+      <path d="M6.6 19.5c.5-3 2.7-4.9 5.4-4.9s4.9 1.9 5.4 4.9" />
+    </svg>
+  );
+}
+
 export function ToolLogo({ logo, size = 14 }) {
   if (!logo) return null;
   return (

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ADMIN_TEXT } from '../content/admin';
 import { LIVE, api, readToken, writeToken } from '../lib/api';
 import { faDigits } from '../lib/time';
+import HeroCanvas from '../components/HeroCanvas';
 import PhaseTextEditor from '../components/PhaseTextEditor';
 import WeekTextEditor from '../components/WeekTextEditor';
 import { BoltIcon, CheckIcon, FlagIcon, LockIcon } from '../components/icons';
@@ -383,12 +384,13 @@ export default function AdminPage() {
 
   return (
     <>
-      <section className="hero" style={{ padding: '72px 0 42px' }}>
+      <section className="hero">
+        <HeroCanvas variant="grid" />
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> {hero.eyebrow} · <span className="mono">{hero.eyebrowMono}</span>
           </span>
-          <h1 className="display" style={{ fontSize: 'clamp(2.2rem,6vw,4rem)' }}>
+          <h1 className="display">
             {hero.title} <b>{hero.titleAccent}</b>
           </h1>
           <p className="tagline">{hero.tagline}</p>

@@ -2,10 +2,9 @@ import { Suspense, lazy, useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import TopBar from './components/TopBar';
 import Footer from './components/Footer';
-// import Home from './pages/Home';
 import Phase0 from './pages/Phase0';
 import WeekPage from './pages/WeekPage';
-// import TalksPage from './pages/TalksPage';
+import TalksPage from './pages/TalksPage';
 
 // Loaded on demand: the roadmap's week content and architecture map ship in their own chunk,
 // so a visitor who never opens the secret address never downloads them.
@@ -30,10 +29,9 @@ export default function App() {
       <TopBar />
       <Suspense fallback={null}>
         <Routes>
-          {/* نقشه‌ی راه و ارائه‌های یکشنبه فعلاً مخفی‌اند؛ برای بازگرداندن، این دو route را جای redirectها بگذار */}
-          <Route path="/" element={<Navigate to="/phase-0" replace />} />
-          {/* <Route path="/" element={<Home />} /> */}
-          {/* یک صفحه و یک آدرس: فاز صفر، صورت پروژه، و نُه هفته زیر هم. */}
+          {/* یک صفحه و یک آدرس: فاز صفر، صورت پروژه، و نُه هفته زیر هم. آدرس ریشه هم همین
+              صفحه را نشان می‌دهد، بدون redirect به /phase-0 — آدرس‌نوار همان‌جا می‌ماند. */}
+          <Route path="/" element={<Phase0 />} />
           <Route path="/phase-0" element={<Phase0 />} />
           <Route path="/phase-0/:weekSlug" element={<Phase0 />} />
           {/* آدرس‌های قدیمیِ نقشه به همان صفحه برمی‌گردند. */}
@@ -45,8 +43,7 @@ export default function App() {
           <Route path="/admin" element={<AdminPage />} />
           {/* منتورها و مسئول برنامه — یک در، دو میز، بسته به نقشِ کسی که وارد شده. */}
           <Route path="/panel" element={<StaffPage />} />
-          <Route path="/talks" element={<Navigate to="/phase-0" replace />} />
-          {/* <Route path="/talks" element={<TalksPage />} /> */}
+          <Route path="/talks" element={<TalksPage />} />
           <Route path="*" element={<Navigate to="/phase-0" replace />} />
         </Routes>
       </Suspense>

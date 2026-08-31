@@ -94,11 +94,13 @@ export const VERDICTS = [
 ];
 
 // اسم‌ها واقعی‌اند؛ عکس‌ها هنوز نه. تا وقتی `photo` خالی باشد، سایت یک پرتره‌ی
-// تولیدی می‌کشد و پنل کنار اسم می‌نویسد «بدون عکس».
-const member = (id, name, seat = '') => ({
+// تولیدی می‌کشد و پنل کنار اسم می‌نویسد «بدون عکس». `avatar` نوعِ آیکونِ کنار اسم
+// است — 'person' برای همه مگر کسی که صریح چیز دیگری خواسته باشد.
+const member = (id, name, seat = '', avatar = 'person') => ({
   id,
   name,
   seat,
+  avatar,
   photo: '',
   verdict: { call: 'none', note: '', updatedAt: null },
 });
@@ -150,8 +152,8 @@ export const TEAMS = [
     color: '#5fd39a',
     mentor: 'amir',
     members: [
-      member('m-nimbus-1', 'سیداحمد رکنی حسینی'),
-      member('m-nimbus-2', 'حمید شفیع‌زاده'),
+      member('m-nimbus-1', 'سیداحمد رکنی حسینی', '', 'elder'),
+      member('m-nimbus-2', 'حمید شفیع‌زاده', '', 'child'),
       member('m-nimbus-3', 'محمدحسین پایدار'),
       member('m-nimbus-4', 'پارسا نصیری'),
     ],

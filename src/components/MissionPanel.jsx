@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { PHASES, ROADMAP_TEXT, weekChallenges } from '../content/bootcamp';
 import { toolLogo } from '../content/toolLogos';
 import ArchitectureMap from './ArchitectureMap';
@@ -6,6 +7,27 @@ import { BoltIcon, FlagIcon, ToolLogo } from './icons';
 import { PANEL_ID } from './RoadmapNode';
 
 const TITLE_ID = 'roadmap-panel-title';
+
+// چک‌لیستِ خودآزمایی قبل از یه رویداد مهم (مثل بازبینی TPM) — بسته می‌مونه تا کسی خودش
+// بخواد ببینتش، نه اینکه با باز شدنِ پنل هفته جلوی چشم باشه.
+function PrepQuiz({ quiz }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rp-quiz">
+      <button type="button" className="rp-quiz-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span>{quiz.title}</span>
+        <span className="rp-quiz-chev" aria-hidden="true">{open ? '−' : '+'}</span>
+      </button>
+      {open && (
+        <ol className="rp-quiz-list">
+          {quiz.questions.map((q) => (
+            <li key={q}>{q}</li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
 
 export default function MissionPanel({ week, panelRef, onClose }) {
   const t = ROADMAP_TEXT.panel;
@@ -80,6 +102,8 @@ export default function MissionPanel({ week, panelRef, onClose }) {
           {week.milestone.body && <p>{week.milestone.body}</p>}
         </div>
       )}
+
+      {week.prepQuiz && <PrepQuiz quiz={week.prepQuiz} />}
 
       {week.objectives?.length > 0 && (
         <div className="rp-block">
