@@ -1,20 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
-import { OBSERVATION_KINDS, VERDICTS } from '../content/people';
+import { OBSERVATION_KINDS } from '../content/people';
 import { api, download } from '../lib/api';
 import { faDigits } from '../lib/time';
 import Avatar from './Avatar';
 import LearningView from './LearningView';
-import NumbersGuide from './NumbersGuide';
 import TpmReport from './TpmReport';
 import TpmView from './TpmView';
 import PanelTabs from './PanelTabs';
-import ThisWeek from './ThisWeek';
+import SubTabs from './SubTabs';
+import WorkQueue, { buildWork } from './WorkQueue';
 import ProgramOverview from './ProgramOverview';
 import ParticipantDetail from './ParticipantDetail';
-import NeedsAttention from './NeedsAttention';
 import WeeklyReview from './WeeklyReview';
-import { missingThisWeek, needsAttention, submitted } from '../../server/src/aggregate';
-import { BoltIcon, CheckIcon, FlagIcon, LockIcon } from './icons';
+import HintBox from './HintBox';
+import VerdictPicker from './VerdictPicker';
+import { submitted } from '../../server/src/aggregate';
+import { BoltIcon } from './icons';
 
 // خلاصه‌ی یک تیم — عمداً بدون «نمره‌ی کل» و بدون رتبه.
 //
@@ -31,10 +32,9 @@ function summarise(team, rows) {
 function MemberRow({ member, onSave, onRemove }) {
   const [edit, setEdit] = useState(false);
   const [draft, setDraft] = useState({ name: member.name, seat: member.seat, photo: member.photo ?? '' });
-  const [verdict, setVerdict] = useState(member.verdict ?? { call: 'none', note: '' });
 
   return (
-    <article className={`roster-row verdict-${verdict.call}`}>
+    <article className={`roster-row verdict-${member.verdict?.call ?? 'none'}`}>
       <Avatar person={member} size={52} />
       <div className="roster-main">
         {edit ? (
@@ -79,31 +79,7 @@ function MemberRow({ member, onSave, onRemove }) {
               </button>
             </div>
 
-            <div className="roster-verdict">
-              <div className="verdict-picker" role="group" aria-label="تصمیم">
-                {VERDICTS.map((v) => (
-                  <button
-                    key={v.id}
-                    type="button"
-                    className={`verdict-item call-${v.id} ${verdict.call === v.id ? 'on' : ''}`}
-                    onClick={() => {
-                      const next = { ...verdict, call: v.id };
-                      setVerdict(next);
-                      onSave({ verdict: next });
-                    }}
-                  >
-                    {v.label}
-                  </button>
-                ))}
-              </div>
-              <input
-                className="verdict-note"
-                placeholder="چرا؟ یک جمله برای خودتان."
-                value={verdict.note ?? ''}
-                onChange={(e) => setVerdict({ ...verdict, note: e.target.value })}
-                onBlur={() => onSave({ verdict })}
-              />
-            </div>
+            <VerdictPicker member={member} onSave={onSave} />
           </>
         )}
       </div>
@@ -488,65 +464,71 @@ export default function LeadDesk({ board, run, client = api }) {
   const team = board.teams.find((t) => t.id === pickedId) ?? board.teams[0];
   const summary = team ? summaries[team.id] : null;
   const mentorOf = (t) => board.mentors.find((m) => m.teamId === t.id);
-  const [hint, setHint] = useState('');
 
-  // «تیمی که عقب است» عمداً حذف شد: رتبه‌بندی تیم‌ها همان چیزی است که سند ممنوع کرده.
-  // چیزی که می‌ماند تصمیم‌های گرفته‌نشده است — کاری که فقط مسئول برنامه می‌تواند بکند.
-  const undecided = useMemo(
-    () =>
-      board.teams.flatMap((t) =>
-        t.members.filter((m) => (m.verdict?.call ?? 'none') === 'none').map((m) => ({ team: t, member: m })),
-      ),
-    [board.teams],
-  );
-
-  const [tab, setTab] = useState('now');
+  const [tab, setTab] = useState('work');
+  // لایه‌ی دوم، یکی به‌ازای هر بخش — تا برگشتن به یک تب، آدم را سر جای قبلی‌اش برگرداند
+  // نه سر اولین زیربخش.
+  const [sub, setSub] = useState({ people: 'observations', teams: 'coverage', tpm: 'scores', setup: 'metrics' });
+  // `section` صریح است چون این را از داخل بخشِ دیگری هم صدا می‌زنیم — مثلاً «کارها» که
+  // آدم را به زیربخشِ «هر تیم» می‌فرستد. بدونش، انتخاب روی بخشِ فعلی می‌نشست.
+  const pickSub = (id, section = tab) => setSub((prev) => ({ ...prev, [section]: id }));
   const [personId, setPersonId] = useState(null);
+  const [cameFrom, setCameFrom] = useState('work');
   const [planTeam, setPlanTeam] = useState(null);
 
   const personaName = (id) => (board.observerPersonas ?? []).find((p) => p.id === id)?.name ?? null;
+  // از هر جا که باز شده، به همان جا برمی‌گردد. قبلاً بازگشت همیشه به «نیازمند توجه»
+  // می‌رفت، حتی وقتی از جدول مشاهده‌ها آمده بودی.
   const openPerson = (member) => {
     setPersonId(member.id);
+    setCameFrom(tab === 'person' ? cameFrom : tab);
     setTab('person');
   };
   const person = board.teams.flatMap((t) => (t.members ?? []).map((m) => ({ member: m, team: t })))
     .find((x) => x.member.id === personId) ?? null;
 
-  // The badge on "این هفته" is how many people the mentors still owe a review for the
-  // active week. It is the one number on this desk that decays if nobody chases it, so it
-  // stays visible from whichever tab is open.
-  const owed = useMemo(() => {
-    const active = board.weeks.find((w) => w.status === 'active');
-    if (!active) return 0;
-    const done = new Set(
-      submitted(assessments).filter((a) => a.weekId === active.id).map((a) => a.memberId),
-    );
-    return board.teams.reduce((n, t) => n + t.members.filter((m) => !done.has(m.id)).length, 0);
-  }, [board.weeks, board.teams, assessments]);
+  // یک حساب، دو مصرف: عددِ روی تب و ردیف‌های زیرش. `buildWork` تنها جایی است که این
+  // شمارش انجام می‌شود.
+  const work = useMemo(() => buildWork(board), [board]);
 
-  // همان چیزی که در صفحه‌ی «نیازمند توجه» شمرده می‌شود، نه یک حسابِ جدا — وگرنه عددِ
-  // روی تب با تعداد کارت‌های زیرش نمی‌خواند.
-  const queueSize = useMemo(() => {
-    const live = (board.competencies ?? []).filter((c) => !c.archived);
-    return (
-      needsAttention(assessments, board.teams, live).length +
-      missingThisWeek(assessments, board.teams, board.weeks).length
-    );
-  }, [assessments, board.teams, board.competencies, board.weeks]);
+  // ناظر ارشد روی «تیم و هفته» گذاشته می‌شود، نه روی یک نفر — پس دکمه هم باید همین را
+  // بگوید و نه چیز دیگری وعده بدهد.
+  const assignObserverFor = (team) => {
+    const weekId = work.week?.id ?? board.weeks[0]?.id ?? 1;
+    return run(() => client.assignObserver({ weekId, teamId: team.id, expected: null, kind: 'planned' }));
+  };
 
-  // ترتیب از روی «چه چیزی الان کار می‌خواهد» است، نه از روی ساختار داده.
+  // پنج بخش، به ترتیبِ کاری که مسئول برنامه می‌کند: اول چیزی که منتظر اوست، بعد آدم‌ها،
+  // بعد سلامتِ خودِ سیستمِ مشاهده. اسم هر تب یا می‌گوید چه کسی، یا می‌گوید چه کاری —
+  // اسمِ جنسِ داده هیچ‌وقت.
   const tabs = [
-    { id: 'now', label: 'این هفته', count: owed },
-    { id: 'attention', label: 'نیازمند توجه', count: queueSize },
-    { id: 'overview', label: 'نمای برنامه' },
-    { id: 'learning', label: 'مشاهده‌ها' },
-    { id: 'numbers', label: 'این عددها' },
-    { id: 'tpm', label: 'TPM' },
-    { id: 'report', label: 'گزارش TPM' },
-    { id: 'review', label: 'مرور هفته' },
+    { id: 'work', label: 'کارها', count: work.count },
+    { id: 'people', label: 'بچه‌ها' },
     { id: 'teams', label: 'تیم‌ها' },
+    { id: 'tpm', label: 'TPM' },
     { id: 'setup', label: 'تنظیمات' },
   ];
+
+  const SUBS = {
+    people: [
+      { id: 'observations', label: 'مشاهده‌ها' },
+      { id: 'week', label: 'مرور هفته' },
+    ],
+    teams: [
+      { id: 'coverage', label: 'پوشش مشاهده' },
+      { id: 'each', label: 'هر تیم' },
+    ],
+    tpm: [
+      { id: 'scores', label: 'امتیازها' },
+      { id: 'report', label: 'گزارش چاپی' },
+    ],
+    setup: [
+      { id: 'metrics', label: 'معیارها' },
+      { id: 'observers', label: 'ناظرها' },
+      { id: 'roster', label: 'نفرات' },
+      { id: 'backups', label: 'پشتیبان' },
+    ],
+  };
 
   if (!team) return <p className="staff-note">هنوز تیمی تعریف نشده.</p>;
 
@@ -555,45 +537,60 @@ export default function LeadDesk({ board, run, client = api }) {
 
   return (
     <div className="lead">
+      {/* سه عددِ ثابتِ قبلی (تیم / نفرات / بدون تصمیم) هیچ‌کدام کاری نمی‌خواستند و
+          «بدون تصمیم» پایین‌تر هم تکرار می‌شد. جایشان: کدام هفته، و همان یک عددی که اگر
+          کسی سراغش نرود بیات می‌شود. */}
       <header className="lead-hero">
         <span className="lead-hero-glow" aria-hidden="true" />
         <div>
           <span className="lead-hero-kicker">پنل مسئول برنامه</span>
-          <h2>وضعیت {faDigits(board.teams.length)} تیم</h2>
+          <h2>
+            {work.week
+              ? `هفته‌ی ${faDigits(work.week.id)}${work.week.title ? ` — ${work.week.title}` : ''}`
+              : 'هیچ هفته‌ای جاری نیست'}
+          </h2>
         </div>
-        <dl className="mentor-hero-stats">
-          <div>
-            <dt>تیم</dt>
-            <dd className="tnum">{faDigits(board.teams.length)}</dd>
-          </div>
-          <div>
-            <dt>نفرات</dt>
-            <dd className="tnum">{faDigits(board.teams.reduce((n, t) => n + t.members.length, 0))}</dd>
-          </div>
-          <div>
-            <dt>بدون تصمیم</dt>
-            <dd className="tnum">{faDigits(undecided.length)}</dd>
-          </div>
-        </dl>
+        <button type="button" className={`lead-owed ${work.count > 0 ? 'on' : ''}`} onClick={() => setTab('work')}>
+          <span className="tnum">{faDigits(work.count)}</span>
+          <i>{work.count > 0 ? 'کار روی میزت' : 'چیزی روی میزت نیست'}</i>
+        </button>
       </header>
 
       <PanelTabs tabs={tabs} active={tab} onPick={setTab} />
 
-      {tab === 'now' && (
-        <ThisWeek
-          teams={board.teams}
-          weeks={board.weeks}
-          assessments={submitted(assessments)}
+      {SUBS[tab] && <SubTabs tabs={SUBS[tab]} active={sub[tab]} onPick={pickSub} />}
+
+      {tab === 'work' && (
+        <WorkQueue
+          work={work}
           mentors={board.mentors}
+          onOpenPerson={openPerson}
           onGoTeam={(id) => {
             setPicked(id);
+            pickSub('each', 'teams');
             setTab('teams');
           }}
-          onGoLearning={() => setTab('learning')}
+          onSendHint={(t) => {
+            setPicked(t.id);
+            pickSub('each', 'teams');
+            setTab('teams');
+          }}
+          onAssignObserver={assignObserverFor}
         />
       )}
 
-      {tab === 'teams' && (
+      {tab === 'teams' && sub.teams === 'coverage' && (
+        <ProgramOverview
+          board={board}
+          onGoTeam={(id) => {
+            setPicked(id);
+            pickSub('each', 'teams');
+          }}
+          onGoAttention={() => setTab('work')}
+        />
+      )}
+
+      {tab === 'teams' && sub.teams === 'each' && (
        <>
       {/* جدول لیگ و «تیمی که عقب است» حذف شدند. رتبه‌بندی تیم‌ها و نمره‌ی کلی هر دو
           صریحاً ممنوع‌اند: یک عدد به‌ازای هر تیم، مشاهده‌ها را به چیزی تبدیل می‌کند که
@@ -637,6 +634,7 @@ export default function LeadDesk({ board, run, client = api }) {
               <BoltIcon size={15} />
               مشاهده‌های منتور
             </h3>
+            <span className="staff-note">آنچه منتورِ {team.name} این دوره نوشته</span>
           </header>
           <div className="obs-cols">
             {OBSERVATION_KINDS.map((kind) => (
@@ -660,83 +658,15 @@ export default function LeadDesk({ board, run, client = api }) {
           <header className="staff-card-head">
             <h3>راهنمایی به منتور</h3>
           </header>
-          <p className="staff-note">
-            این متن فقط در پنل منتور همین تیم دیده می‌شود — جای گفتنِ «این هفته سراغ فلان چیز برو» یا سفارش یک
-            آموزش جبرانی.
-          </p>
-          <textarea rows={3} value={hint} onChange={(e) => setHint(e.target.value)} placeholder="یک راهنمایی مشخص." />
-          <button
-            type="button"
-            className="staff-primary"
-            disabled={!hint.trim()}
-            onClick={() => run(() => client.addHint({ teamId: team.id, text: hint })).then(() => setHint(''))}
-          >
-            <CheckIcon size={13} />
-            بفرست
-          </button>
-          <ul className="hint-log">
-            {teamHints.map((h) => (
-              <li key={h.id}>
-                <p>{h.text}</p>
-                <footer>
-                  <span className={h.readAt ? 'hint-read' : 'hint-unread'}>
-                    {h.readAt ? 'خوانده شد' : <><LockIcon size={11} /> خوانده‌نشده</>}
-                  </span>
-                  <button type="button" className="staff-link danger" onClick={() => run(() => client.removeHint(h.id))}>
-                    حذف
-                  </button>
-                </footer>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="staff-card">
-          <header className="staff-card-head">
-            <h3>نفرات {team.name}</h3>
-            <button
-              type="button"
-              className="staff-link"
-              onClick={() => run(() => client.addMember(team.id, { name: 'عضو تازه', seat: '' }))}
-            >
-              + افزودن نفر
-            </button>
-          </header>
-          <div className="roster">
-            {team.members.map((member) => (
-              <MemberRow
-                key={member.id}
-                member={member}
-                onSave={(patch) => run(() => client.patchMember(member.id, patch))}
-                onRemove={() => run(() => client.removeMember(member.id))}
-              />
-            ))}
-          </div>
+          <HintBox
+            team={team}
+            hints={teamHints}
+            onSend={(text) => run(() => client.addHint({ teamId: team.id, text }))}
+            onRemove={(id) => run(() => client.removeHint(id))}
+          />
         </section>
       </div>
        </>
-      )}
-
-      {tab === 'overview' && (
-        <ProgramOverview
-          board={board}
-          onGoTeam={(id) => {
-            setPicked(id);
-            setTab('teams');
-          }}
-          onGoAttention={() => setTab('attention')}
-        />
-      )}
-
-      {tab === 'attention' && (
-        <NeedsAttention
-          board={board}
-          onOpenPerson={openPerson}
-          onAssignObserver={(teamId) => {
-            setPlanTeam(teamId);
-            setTab('setup');
-          }}
-        />
       )}
 
       {tab === 'person' &&
@@ -746,41 +676,46 @@ export default function LeadDesk({ board, run, client = api }) {
             team={person.team}
             board={board}
             personaName={personaName}
-            onBack={() => setTab('attention')}
+            onBack={() => setTab(cameFrom)}
+            onSaveVerdict={(patch) => run(() => client.patchMember(person.member.id, patch))}
+            onSendHint={(text) => run(() => client.addHint({ teamId: person.team.id, text }))}
+            onAssignObserver={() => assignObserverFor(person.team)}
+            activeWeek={work.week}
+            hints={board.hints.filter((h) => h.teamId === person.team.id)}
           />
         ) : (
           <p className="staff-note">این نفر پیدا نشد.</p>
         ))}
 
-      {tab === 'review' && <WeeklyReview board={board} personaName={personaName} />}
-
-      {tab === 'learning' && (
+      {tab === 'people' && sub.people === 'observations' && (
         <LearningView
           board={board}
-          weekId={board.weeks.find((w) => w.status === 'active')?.id ?? board.weeks[0]?.id ?? 1}
+          weekId={work.week?.id ?? board.weeks[0]?.id ?? 1}
           onOpenPerson={openPerson}
-          onOpenGuide={() => setTab('numbers')}
         />
       )}
 
-      {tab === 'numbers' && <NumbersGuide board={board} />}
+      {tab === 'people' && sub.people === 'week' && <WeeklyReview board={board} personaName={personaName} />}
 
       {/* فانلِ جدا، درخواستِ جدا: این نما داده‌اش را خودش از /api/tpm/board می‌گیرد و هیچ
           عددی با نمای منتورها ردوبدل نمی‌کند. */}
-      {tab === 'tpm' && <TpmView weeks={board.weeks} />}
+      {tab === 'tpm' && sub.tpm === 'scores' && <TpmView weeks={board.weeks} />}
 
       {/* گزارش قابل چاپ همان جلسه. هفته را نگاه نمی‌کند و نمره‌ی کلی نمی‌سازد — چرایی هر
           دو در خود کامپوننت نوشته شده. */}
-      {tab === 'report' && <TpmReport />}
+      {tab === 'tpm' && sub.tpm === 'report' && <TpmReport />}
 
-      {tab === 'setup' && (
+      {tab === 'setup' && sub.setup === 'metrics' && (
+        <CompetencyEditor
+          competencies={competencies}
+          onUpdate={(id, patch) => run(() => client.updateCompetency(id, patch))}
+          onAdd={(body) => run(() => client.addCompetency(body))}
+          onArchive={(id, archived) => run(() => client.archiveCompetency(id, archived))}
+        />
+      )}
+
+      {tab === 'setup' && sub.setup === 'observers' && (
         <>
-          <CompetencyEditor
-            competencies={competencies}
-            onUpdate={(id, patch) => run(() => client.updateCompetency(id, patch))}
-            onAdd={(body) => run(() => client.addCompetency(body))}
-            onArchive={(id, archived) => run(() => client.archiveCompetency(id, archived))}
-          />
           <PersonaManager
             personas={board.observerPersonas ?? []}
             onAdd={(body) => run(() => client.addPersona(body))}
@@ -795,9 +730,65 @@ export default function LeadDesk({ board, run, client = api }) {
             onAssign={(body) => run(() => client.assignObserver(body))}
             onRemove={(id) => run(() => client.removeObserverAssignment(id))}
           />
-          <Backups client={client} />
         </>
       )}
+
+      {/* ویرایش نفرات از کنار مشاهده‌ها آمد این‌جا: عوض‌کردن اسم و عکس و افزودن نفر، کارِ
+          نگه‌داری است، نه کاری که موقع نگاه‌کردن به شواهد بکنی. */}
+      {tab === 'setup' && sub.setup === 'roster' && (
+        <>
+          <section className="staff-card league">
+            <header className="staff-card-head">
+              <h3>تیم</h3>
+              <span className="staff-note">نفراتِ کدام تیم را می‌خواهی ویرایش کنی</span>
+            </header>
+            <div className="league-list">
+              {board.teams.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`league-row ${t.id === team.id ? 'on' : ''}`}
+                  style={{ '--team-color': t.color }}
+                  onClick={() => setPicked(t.id)}
+                >
+                  <span className="league-badge">{(t.latin ?? t.name).slice(0, 2).toUpperCase()}</span>
+                  <span className="league-id">
+                    <strong>{t.name}</strong>
+                    <i>{mentorOf(t)?.name ?? '—'}</i>
+                  </span>
+                  <span className="league-people tnum">{faDigits(t.members.length)} نفر</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="staff-card">
+            <header className="staff-card-head">
+              <h3>نفرات {team.name}</h3>
+              <button
+                type="button"
+                className="staff-link"
+                onClick={() => run(() => client.addMember(team.id, { name: 'عضو تازه', seat: '' }))}
+              >
+                + افزودن نفر
+              </button>
+            </header>
+            <div className="roster">
+              {team.members.map((member) => (
+                <MemberRow
+                  key={member.id}
+                  member={member}
+                  onSave={(patch) => run(() => client.patchMember(member.id, patch))}
+                  onRemove={() => run(() => client.removeMember(member.id))}
+                />
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+
+      {tab === 'setup' && sub.setup === 'backups' && <Backups client={client} />}
+
     </div>
   );
 }

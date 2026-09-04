@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { faDigits } from '../lib/time';
+import NumbersGuide from './NumbersGuide';
 import { disagreement, evidenceLevel, forMember, submitted } from '../../server/src/aggregate';
 
 // نمای مسئول برنامه روی مشاهده‌ها.
@@ -219,7 +220,10 @@ function Drill({ open, rows, onClose }) {
   );
 }
 
-export default function LearningView({ board, weekId, onOpenPerson, onOpenGuide }) {
+export default function LearningView({ board, weekId, onOpenPerson }) {
+  // راهنما تبِ جدا بود، کنارِ همین تب — یعنی برای فهمیدنِ یک عدد باید از جدولی که عدد
+  // در آن است بیرون می‌رفتی. حالا کشویی است کنار همان جدول و هر دو با هم دیده می‌شوند.
+  const [guide, setGuide] = useState(false);
   const [view, setView] = useState('people');
   const [open, setOpen] = useState(null);
   const [picked, setPicked] = useState(weekId);
@@ -279,20 +283,36 @@ export default function LearningView({ board, weekId, onOpenPerson, onOpenGuide 
                 </button>
               ))}
             </div>
-            {onOpenGuide && (
-              <button type="button" className="staff-link learn-guide" onClick={onOpenGuide}>
-                این عددها چطور ساخته می‌شوند؟
-              </button>
+            <button
+              type="button"
+              className={`staff-link learn-guide ${guide ? 'on' : ''}`}
+              aria-expanded={guide}
+              onClick={() => setGuide(!guide)}
+            >
+              {guide ? 'بستن راهنما' : 'این عددها چطور ساخته می‌شوند؟'}
+            </button>
+          </div>
+          <div className={`learn-split ${guide ? 'with-guide' : ''}`}>
+            <Heat
+              teams={teams}
+              competencies={competencies}
+              rows={rows}
+              weekId={shown}
+              onOpen={setOpen}
+              onOpenPerson={onOpenPerson}
+            />
+            {guide && (
+              <aside className="learn-drawer">
+                <header>
+                  <h4>این عددها چطور حساب می‌شوند</h4>
+                  <button type="button" className="staff-link" onClick={() => setGuide(false)} aria-label="بستن">
+                    ×
+                  </button>
+                </header>
+                <NumbersGuide board={board} compact />
+              </aside>
             )}
           </div>
-          <Heat
-            teams={teams}
-            competencies={competencies}
-            rows={rows}
-            weekId={shown}
-            onOpen={setOpen}
-            onOpenPerson={onOpenPerson}
-          />
         </>
       )}
       {view === 'attention' && <Attention teams={teams} competencies={competencies} rows={rows} />}

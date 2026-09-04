@@ -146,7 +146,9 @@ function Block({ title, children }) {
   );
 }
 
-export default function NumbersGuide({ board }) {
+// `compact` برای وقتی است که این کنار خودِ جدول باز می‌شود: آن‌جا قاب و عنوان را کشو
+// می‌دهد و تکرارشان فقط دو تا کادر تودرتو می‌سازد.
+export default function NumbersGuide({ board, compact = false }) {
   const rows = board.assessments ?? [];
   const competencies = useMemo(
     () => (board.competencies ?? []).filter((c) => !c.archived),
@@ -182,11 +184,13 @@ export default function NumbersGuide({ board }) {
   ];
 
   return (
-    <section className="staff-card ng">
-      <header className="staff-card-head">
-        <h3>این عددها چطور ساخته می‌شوند</h3>
-        <span className="staff-note">هر نتیجه‌ی این صفحه همان لحظه حساب می‌شود، نه از روی متن</span>
-      </header>
+    <section className={compact ? 'ng ng-compact' : 'staff-card ng'}>
+      {!compact && (
+        <header className="staff-card-head">
+          <h3>این عددها چطور ساخته می‌شوند</h3>
+          <span className="staff-note">هر نتیجه‌ی این صفحه همان لحظه حساب می‌شود، نه از روی متن</span>
+        </header>
+      )}
 
       <Block title="یک خانه‌ی جدول، قدم به قدم">
         <Worked example={shown} />

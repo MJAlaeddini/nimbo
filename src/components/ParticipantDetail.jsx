@@ -1,5 +1,7 @@
 import { faDigits } from '../lib/time';
 import { disagreement, forMember, submitted } from '../../server/src/aggregate';
+import HintBox from './HintBox';
+import VerdictPicker from './VerdictPicker';
 
 // سطح سوم: یک نفر، چهار معیار، و پشتِ هر عدد ردیف‌های خامی که ساخته‌اندش.
 //
@@ -92,7 +94,21 @@ function Card({ competency, summary }) {
   );
 }
 
-export default function ParticipantDetail({ member, team, board, onBack, personaName }) {
+// کارها روی همین صفحه‌اند و نه سه تب آن‌طرف‌تر: تا حالا برای گذاشتن ناظر باید می‌رفتی
+// «تنظیمات»، برای راهنمایی به منتور «تیم‌ها»، و تصمیم فقط لای ردیفِ ویرایشِ نفرات بود.
+// یعنی هر سه کار، دور از شواهدی که آدم را به آن‌ها می‌رساند.
+export default function ParticipantDetail({
+  member,
+  team,
+  board,
+  onBack,
+  personaName,
+  onSaveVerdict,
+  onSendHint,
+  onAssignObserver,
+  activeWeek,
+  hints = [],
+}) {
   const rows = board.assessments ?? [];
   const competencies = (board.competencies ?? []).filter((c) => !c.archived);
 
@@ -100,6 +116,8 @@ export default function ParticipantDetail({ member, team, board, onBack, persona
   const notes = submitted(rows)
     .filter((r) => r.memberId === member.id && r.note)
     .sort((a, b) => b.weekId - a.weekId);
+
+  const planned = (board.observerAssignments ?? []).filter((a) => a.teamId === team.id);
 
   return (
     <section className="staff-card pd">
@@ -121,6 +139,45 @@ export default function ParticipantDetail({ member, team, board, onBack, persona
           />
         ))}
       </div>
+
+      {onSaveVerdict && (
+        <div className="pd-do">
+          <section className="pd-act">
+            <h4>تصمیم</h4>
+            <p className="staff-note">تنها جایی که تصمیم ثبت می‌شود. هر وقت هم بگیری، گرفته شده است.</p>
+            <VerdictPicker member={member} onSave={onSaveVerdict} />
+          </section>
+
+          <section className="pd-act">
+            <h4>ناظر مستقل</h4>
+            {/* ناظر روی تیم و هفته گذاشته می‌شود، نه روی یک نفر — پس دکمه هم باید همین
+                را بگوید، وگرنه وعده‌ای می‌دهد که سیستم زیرش نیست. */}
+            <p className="staff-note">
+              جلسه برای <b dir="ltr">{team.name}</b>
+              {activeWeek ? ` در هفته‌ی ${faDigits(activeWeek.id)}` : ''} باز می‌شود، نه فقط برای این یک نفر.
+              رأی ناظر وزن بیشتری ندارد؛ فقط یک دیدِ سوم است.
+            </p>
+            <button type="button" className="staff-primary" onClick={onAssignObserver}>
+              جلسه‌ی ناظر را باز کن
+            </button>
+            {planned.length > 0 && (
+              <ul className="pd-planned">
+                {planned.map((a) => (
+                  <li key={a.id}>
+                    هفته‌ی {faDigits(a.weekId)}
+                    {a.expected && personaName(a.expected) ? ` · ${personaName(a.expected)}` : ''}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="pd-act">
+            <h4>راهنمایی به منتور</h4>
+            <HintBox team={team} hints={hints} onSend={onSendHint} compact />
+          </section>
+        </div>
+      )}
 
       {notes.length > 0 && (
         <>
