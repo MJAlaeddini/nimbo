@@ -1925,12 +1925,24 @@ nav.mainnav .navtab:focus-visible{outline:2px solid var(--gold-lit);outline-offs
 .rep-notes p{color:var(--ink);font-size:.86rem;line-height:1.9}
 .rep-foot{margin-top:16px;padding-top:10px;border-top:1px dashed var(--line);color:var(--lav-dim);font-size:.72rem}
 
+/* قطع کاغذ فقط برای برگه‌های همین گزارش، با صفحه‌ی نام‌دار. یک `@page` بی‌نام قطع و
+   حاشیه‌ی چاپِ *کل* سایت را عوض می‌کرد، و قرار نبود چیزی بیرون این گزارش تکان بخورد. */
+@page report{size:A4;margin:14mm}
+
 @media print{
-  /* روی کاغذ فقط سند. بقیه‌ی سایت نباید چاپ شود. */
-  .topbar,.mainnav,.paneltabs,.staff-bar,.lead-hero,.rep-bar,footer,.adm-error{display:none!important}
-  @page{size:A4;margin:14mm}
-  body{background:#fff!important;color:#111!important}
-  .rep-page{break-after:page;page-break-after:always;border:0;background:none;padding:0}
+  /* روی کاغذ فقط سند. بقیه‌ی سایت نباید چاپ شود — ولی این حرف فقط درباره‌ی صفحه‌ای است
+     که گزارش رویش باز است، برای همین همه‌شان زیر `body:has(.rep)` رفته‌اند. چاپِ بقیه‌ی
+     صفحه‌ها همان است که بود. */
+  body:has(.rep) .topbar,
+  body:has(.rep) .mainnav,
+  body:has(.rep) .paneltabs,
+  body:has(.rep) .staff-bar,
+  body:has(.rep) .lead-hero,
+  body:has(.rep) .rep-bar,
+  body:has(.rep) footer,
+  body:has(.rep) .adm-error{display:none!important}
+  body:has(.rep){background:#fff!important;color:#111!important}
+  .rep-page{page:report;break-after:page;page-break-after:always;border:0;background:none;padding:0}
   .rep-page:last-child{break-after:auto;page-break-after:auto}
   .rep-person{break-inside:avoid}
   .rep-cover h1,.rep-person h2,.rep-table th,.rep-notes p,.rep-bucket li strong,.rep-lede{color:#111!important}
