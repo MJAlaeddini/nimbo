@@ -1,5 +1,8 @@
 import { ACCOUNTS, TEAMS, TEAMS_TEXT } from '../content/people';
-import { PICK_TEXT, SCHEDULE, TOPICS } from '../content/syllabus';
+import { PICK_TEXT, SCHEDULE, TOPIC_LOGOS, TOPICS } from '../content/syllabus';
+import { toolLogo } from '../content/toolLogos';
+import HeroCanvas from './HeroCanvas';
+import { ChildIcon, ElderIcon, PersonIcon, SparkIcon, ToolLogo } from './icons';
 import { fmtDate, fmtWeekday } from '../lib/time';
 
 // معرفی تیم‌ها. قبلاً وسط تب سرفصل‌ها بود و آن‌جا بین «چه چیزی ارائه می‌شود» و «کِی ارائه
@@ -11,6 +14,8 @@ import { fmtDate, fmtWeekday } from '../lib/time';
 const MENTOR = Object.fromEntries(ACCOUNTS.map((a) => [a.id, a]));
 const TOPIC = Object.fromEntries(TOPICS.map((t) => [t.id, t]));
 
+const AVATAR_ICON = { person: PersonIcon, elder: ElderIcon, child: ChildIcon };
+
 function talksOf(teamId) {
   return SCHEDULE.filter((slot) => slot.teamId === teamId);
 }
@@ -18,14 +23,13 @@ function talksOf(teamId) {
 export default function Teams() {
   return (
     <>
-      <section className="hero" style={{ padding: '78px 0 48px' }}>
+      <section className="hero">
+        <HeroCanvas variant="network" />
         <div className="wrap inner">
           <span className="eyebrow">
             <span className="dot" /> <span className="mono">{TEAMS_TEXT.kicker}</span>
           </span>
-          <h1 className="display" style={{ fontSize: 'clamp(2.4rem,6.4vw,4.6rem)' }}>
-            {TEAMS_TEXT.title}
-          </h1>
+          <h1 className="display">{TEAMS_TEXT.title}</h1>
           <p className="tagline">{TEAMS_TEXT.tagline}</p>
         </div>
       </section>
@@ -40,22 +44,36 @@ export default function Teams() {
               const talks = talksOf(team.id);
               return (
                 <article key={team.id} className="teamcard big" style={{ '--team-color': team.color }}>
-                  <header dir="ltr">{team.name}</header>
+                  <span className="teamcard-glow" aria-hidden="true" />
+
+                  <header>
+                    <span className="teamcard-avatar" aria-hidden="true">
+                      {team.latin.slice(0, 1)}
+                    </span>
+                    <span dir="ltr">{team.name}</span>
+                  </header>
 
                   {mentor && (
                     <p className="teamcard-mentor">
+                      <SparkIcon size={13} />
                       <span>{TEAMS_TEXT.mentorLabel}</span>
                       <b>{mentor.name}</b>
                     </p>
                   )}
 
                   <ul className="teamcard-people">
-                    {team.members.map((m) => (
-                      <li key={m.id}>
-                        <span>{m.name}</span>
-                        {m.seat && <i>{m.seat}</i>}
-                      </li>
-                    ))}
+                    {team.members.map((m) => {
+                      const Avatar = AVATAR_ICON[m.avatar] ?? PersonIcon;
+                      return (
+                        <li key={m.id}>
+                          <span className="teamcard-person">
+                            <Avatar size={15} />
+                            {m.name}
+                          </span>
+                          {m.seat && <i>{m.seat}</i>}
+                        </li>
+                      );
+                    })}
                   </ul>
 
                   <div className="teamcard-talks">
@@ -66,7 +84,12 @@ export default function Teams() {
                       <ul>
                         {talks.map((slot) => (
                           <li key={slot.n}>
-                            <b dir="ltr">{TOPIC[slot.topicId]?.name ?? slot.topicId}</b>
+                            <b dir="ltr">
+                              {(TOPIC_LOGOS[slot.topicId] ?? []).map((name) => (
+                                <ToolLogo key={name} logo={toolLogo(name)} size={13} />
+                              ))}
+                              {TOPIC[slot.topicId]?.name ?? slot.topicId}
+                            </b>
                             {/* ساعت این‌جا هم می‌آید: کسی که فقط تیم خودش را نگاه می‌کند
                                 نباید برای دانستن ساعت برود تب سرفصل‌ها. */}
                             <i>

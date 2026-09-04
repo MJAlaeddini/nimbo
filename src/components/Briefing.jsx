@@ -1,16 +1,25 @@
+import { toolLogo } from '../content/toolLogos';
+import { ToolLogo } from './icons';
+
+const OVERVIEW_TOOLS = ['Kafka', 'HDFS', 'Spark', 'Gerrit', 'Jenkins', 'Ansible', 'Kubernetes', 'Helm'];
+
 export default function Briefing() {
   return (
     <section className="block" id="briefing">
       <div className="wrap">
         <div className="sec-head">
-          <span className="sec-kicker">BRIEFING</span>
-          <h2 className="sec-title">بریفینگِ پیش از پرتاب</h2>
+          <span className="sec-kicker">OVERVIEW</span>
+          <h2 className="sec-title">خلاصه‌ی فاز صفر</h2>
         </div>
         <p className="sec-note" style={{ marginBottom: 28 }}>
           توی Nimbo قراره یک پروژه‌ی واقعی بسازید و در این مسیر با کلی ابزار جدید کار کنید:{' '}
-          <span className="chip tool">Kafka</span> <span className="chip tool">HDFS</span> <span className="chip tool">Spark</span>{' '}
-          <span className="chip tool">Gerrit</span> <span className="chip tool">Jenkins</span> <span className="chip tool">Ansible</span>{' '}
-          <span className="chip tool">Kubernetes</span> <span className="chip tool">Helm</span> و… . سرعت دوره بالاست و نمی‌خوایم انرژی‌تون صرف چیزهای پایه‌ای بشه.
+          {OVERVIEW_TOOLS.map((name) => (
+            <span key={name} className="chip tool">
+              <ToolLogo logo={toolLogo(name)} size={14} />
+              {name}
+            </span>
+          ))}{' '}
+          و… . سرعت دوره بالاست و نمی‌خوایم انرژی‌تون صرف چیزهای پایه‌ای بشه.
         </p>
         <div className="brief-grid">
           <div className="brief-card">

@@ -27,11 +27,11 @@ export default function Timeline({ phase }) {
     <section className="block" id="timeline">
       <div className="wrap">
         <div className="sec-head">
-          <span className="sec-kicker">LAUNCH SEQUENCE</span>
+          <span className="sec-kicker">MISSION TIMELINE</span>
           <h2 className="sec-title">جدول زمانی مأموریت‌ها</h2>
         </div>
         <p className="sec-note" style={{ marginBottom: 36 }}>
-          هفت روز، هفت مأموریت. هر روز یک مرحله از توالی پرتاب باز می‌شه. ترتیبْ روایی‌ست: هر مأموریت بخشی از تصویر نهایی سیستم رو می‌سازه.
+          هفت روز، هفت مأموریت. هر روز یک مأموریت تازه باز می‌شه. ترتیبْ روایی‌ست: هر مأموریت بخشی از تصویر نهایی سیستم رو می‌سازه.
         </p>
         <div className="timeline" ref={rootRef}>
           <div className="rail" />

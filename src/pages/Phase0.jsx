@@ -5,10 +5,14 @@ import { parsePhaseMarkdown } from '../lib/markdown';
 import { CONFIG, PREVIEW_MODE } from '../config';
 import { usePhaseTimeline } from '../hooks/usePhaseTimeline';
 import { PROJECT, ROADMAP_TEXT } from '../content/bootcamp';
+import { TOTAL_WEEKS, weekStartISO } from '../content/schedule';
 import { useRoadmap } from '../hooks/useRoadmap';
+import { useNow } from '../hooks/useNow';
 import { useTab } from '../hooks/useTab';
 import { writeToken } from '../lib/api';
+import { faDigits, formatCountdown } from '../lib/time';
 import Hero from '../components/Hero';
+import HeroCanvas from '../components/HeroCanvas';
 import Briefing from '../components/Briefing';
 import Timeline from '../components/Timeline';
 import PhaseBoard from '../components/PhaseBoard';
@@ -16,6 +20,7 @@ import Roadmap from '../components/Roadmap';
 import Syllabus from '../components/Syllabus';
 import Teams from '../components/Teams';
 import WeekRhythm from '../components/WeekRhythm';
+import TalksPage from './TalksPage';
 
 // One address for the whole programme. Phase zero and the nine weeks are two tabs of the
 // same page, not two places — switching is a click, never a navigation.
@@ -25,6 +30,18 @@ export default function Phase0() {
   const phase = usePhaseTimeline(missions, CONFIG, PREVIEW_MODE);
   const { phases, weeks, preview } = useRoadmap();
   const [tab, pick] = useTab();
+  const now = useNow(1000);
+  const openWeeks = weeks.filter((w) => w.status !== 'locked').length;
+  // اولین شنبه‌ای که هنوز نرسیده — همان چیزی که «هفته‌ی بعدی» یعنی، مستقل از اینکه کادر
+  // دستی چه‌وقت قفلش را باز می‌کند.
+  const nextWeekStart = useMemo(() => {
+    for (let w = 1; w <= TOTAL_WEEKS; w++) {
+      const start = new Date(`${weekStartISO(w)}T00:00:00`);
+      if (start > now) return start;
+    }
+    return null;
+  }, [now]);
+  const weekCountdownLabel = nextWeekStart ? formatCountdown(Math.max(0, nextWeekStart.getTime() - now.getTime())) : 'شروع شده';
   // A link straight to a week opens on the tab that holds it.
   useEffect(() => {
     if (weekSlug) pick('roadmap');
@@ -67,6 +84,38 @@ export default function Phase0() {
 
       {tab === 'roadmap' && (
         <>
+          <section className="hero">
+            <HeroCanvas variant="nebula" />
+            <div className="wrap inner">
+              <span className="eyebrow">
+                <span className="dot" /> {ROADMAP_TEXT.hero.eyebrow} · <span className="mono">{ROADMAP_TEXT.hero.eyebrowMono}</span>
+              </span>
+              <div className="phase-num mono">{ROADMAP_TEXT.hero.code}</div>
+              <h1 className="display">
+                {ROADMAP_TEXT.hero.title} <b>{ROADMAP_TEXT.hero.titleAccent}</b>
+              </h1>
+              <p className="tagline">{ROADMAP_TEXT.hero.tagline}</p>
+              <div className="launch-status">
+                <div className="ls-block">
+                  <span className="ls-label">هفته‌ی باز</span>
+                  <span className="ls-value gold tnum">
+                    {faDigits(openWeeks)} / {faDigits(weeks.length)}
+                  </span>
+                </div>
+                <div className="ls-sep" />
+                <div className="ls-block">
+                  <span className="ls-label">هفته‌ی بعدی در</span>
+                  <span className="ls-value tnum">{weekCountdownLabel}</span>
+                </div>
+              </div>
+              <div className="dare mono">
+                DARE&nbsp;TO&nbsp;<b>CHANGE</b>
+              </div>
+            </div>
+          </section>
+
+          <div className="divider" />
+
           <section className="block" id="brief">
             <div className="wrap">
               <div className="sec-head">
@@ -103,10 +152,14 @@ export default function Phase0() {
               <Roadmap basePath="/phase-0" weeks={weeks} phases={phases} />
             </div>
           </section>
+
+          <div className="divider" />
+
+          <WeekRhythm />
         </>
       )}
 
-      {tab === 'rhythm' && <WeekRhythm />}
+      {tab === 'talks' && <TalksPage />}
 
       {tab === 'syllabus' && <Syllabus />}
 
