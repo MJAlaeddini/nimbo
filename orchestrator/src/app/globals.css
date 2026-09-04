@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Design tokens.
+
+   One dark canvas, one elevated surface, hairline rules. Colour is reserved
+   almost entirely for status: if something is coloured, it means something.
+   ───────────────────────────────────────────────────────────────────────── */
+@theme {
+  --color-canvas: #08090b;
+  --color-surface: #0d0f12;
+  --color-raised: #141719;
+  --color-inset: #0a0b0d;
+
+  --color-line: rgba(255, 255, 255, 0.07);
+  --color-line-strong: rgba(255, 255, 255, 0.13);
+
+  --color-ink: #e9ebee;
+  --color-ink-2: #9aa1ab;
+  --color-ink-3: #666d78;
+  --color-ink-4: #464c55;
+
+  /* Status semantics — the only saturated colour in the product. */
+  --color-run: #4c8dff;
+  --color-run-dim: rgba(76, 141, 255, 0.14);
+  --color-ok: #3fcf8e;
+  --color-ok-dim: rgba(63, 207, 142, 0.13);
+  --color-bad: #f4696b;
+  --color-bad-dim: rgba(244, 105, 107, 0.13);
+  --color-warn: #e0a44a;
+  --color-warn-dim: rgba(224, 164, 74, 0.14);
+  --color-idle: #5b636e;
+  --color-idle-dim: rgba(91, 99, 110, 0.14);
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-pulse-ring: pulse-ring 2s var(--ease-out-soft) infinite;
+  --animate-rise: rise 0.28s var(--ease-out-soft) both;
+  --animate-sweep: sweep 1.6s linear infinite;
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 var(--color-run-dim); }
+  70% { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+
+* { border-color: var(--color-line); }
+
+html {
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-variant-ligatures: none;
+}
+
+/* Tabular figures everywhere a number changes in place — timers, durations,
+   counts — so nothing jitters as it ticks. */
+.tnum { font-variant-numeric: tabular-nums; }
+
+::selection { background: rgba(76, 141, 255, 0.28); }
+
+/* Scrollbars: present, but not part of the composition. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.13) transparent;
+}
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.11);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); background-clip: content-box; }
+
+:focus-visible {
+  outline: 1px solid var(--color-run);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
