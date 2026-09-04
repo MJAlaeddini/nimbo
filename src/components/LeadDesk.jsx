@@ -5,6 +5,7 @@ import { faDigits } from '../lib/time';
 import Avatar from './Avatar';
 import LearningView from './LearningView';
 import NumbersGuide from './NumbersGuide';
+import TpmReport from './TpmReport';
 import TpmView from './TpmView';
 import PanelTabs from './PanelTabs';
 import ThisWeek from './ThisWeek';
@@ -541,6 +542,7 @@ export default function LeadDesk({ board, run, client = api }) {
     { id: 'learning', label: 'مشاهده‌ها' },
     { id: 'numbers', label: 'این عددها' },
     { id: 'tpm', label: 'TPM' },
+    { id: 'report', label: 'گزارش TPM' },
     { id: 'review', label: 'مرور هفته' },
     { id: 'teams', label: 'تیم‌ها' },
     { id: 'setup', label: 'تنظیمات' },
@@ -766,6 +768,10 @@ export default function LeadDesk({ board, run, client = api }) {
       {/* فانلِ جدا، درخواستِ جدا: این نما داده‌اش را خودش از /api/tpm/board می‌گیرد و هیچ
           عددی با نمای منتورها ردوبدل نمی‌کند. */}
       {tab === 'tpm' && <TpmView weeks={board.weeks} />}
+
+      {/* گزارش قابل چاپ همان جلسه. هفته را نگاه نمی‌کند و نمره‌ی کلی نمی‌سازد — چرایی هر
+          دو در خود کامپوننت نوشته شده. */}
+      {tab === 'report' && <TpmReport />}
 
       {tab === 'setup' && (
         <>

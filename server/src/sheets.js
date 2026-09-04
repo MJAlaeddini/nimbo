@@ -96,9 +96,45 @@ export function hintsSheet({ teams, hints }) {
   return toCsv(headers, rows);
 }
 
+// ردیف‌های جلسه‌ی بازبینی TPM. مجموعه‌ی جداست، پس برگه‌ی جداست — قاطی‌کردنشان با
+// مشاهده‌های منتورها یعنی کسی در Excel روی دو جنس داده یک میانگین می‌گیرد.
+//
+// هفته توی خروجی می‌ماند و اصلاح نمی‌شود: گزارشِ داخل پنل هفته را نادیده می‌گیرد، ولی
+// فایل خام باید همان چیزی باشد که واقعاً ثبت شده.
+export function reviewsSheet({ teams, accounts, reviews, tpmMetrics = [], tpmNotes = [] }) {
+  const headers = [
+    'هفته', 'تیم', 'نفر', 'شناسه‌ی نفر', 'TPM',
+    ...tpmMetrics.map((m) => m.label),
+    ...tpmNotes.map((n) => n.label),
+    'وضعیت', 'زمان ثبت',
+  ];
+  const memberName = (memberId) =>
+    teams.flatMap((t) => t.members ?? []).find((m) => m.id === memberId)?.name ?? memberId;
+
+  const rows = [...reviews]
+    .sort((a, b) => a.weekId - b.weekId || String(a.teamId).localeCompare(String(b.teamId)))
+    .map((row) => [
+      row.weekId,
+      teams.find((t) => t.id === row.teamId)?.name ?? row.teamId,
+      memberName(row.memberId),
+      row.memberId,
+      nameOf(accounts, row.author),
+      ...tpmMetrics.map((m) => {
+        const rating = row.ratings?.[m.id];
+        if (rating === undefined) return '';
+        return rating === 'NOT_OBSERVED' ? 'مشاهده نشد' : rating;
+      }),
+      ...tpmNotes.map((n) => (row.notes ?? {})[n.id] ?? ''),
+      row.status === 'submitted' ? 'ثبت شد' : 'پیش‌نویس',
+      (row.submittedAt ?? '').slice(0, 16).replace('T', ' '),
+    ]);
+  return toCsv(headers, rows);
+}
+
 export const SHEETS = {
   people: { file: 'people.csv', build: peopleSheet },
   assessments: { file: 'assessments.csv', build: assessmentsSheet },
+  reviews: { file: 'tpm-reviews.csv', build: reviewsSheet },
   observations: { file: 'observations.csv', build: observationsSheet },
   hints: { file: 'hints.csv', build: hintsSheet },
 };

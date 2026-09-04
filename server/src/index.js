@@ -205,6 +205,11 @@ app.get('/api/staff/export/:kind.csv', leadOnly, (req, res) => {
     accounts: store.listAccounts(),
     competencies: store.listCompetencies(),
     assessments: store.listAssessments(),
+    reviews: store.listReviews(),
+    // سنجه‌های TPM در محتوای سایت‌اند و داخل ایمیج سرور نیستند، پس عنوان ستون‌ها از
+    // خودِ ردیف‌ها ساخته می‌شود: هر شناسه‌ای که واقعاً ثبت شده، یک ستون.
+    tpmMetrics: [...new Set(store.listReviews().flatMap((r) => Object.keys(r.ratings ?? {})))].map((id) => ({ id, label: id })),
+    tpmNotes: [...new Set(store.listReviews().flatMap((r) => Object.keys(r.notes ?? {})))].map((id) => ({ id, label: id })),
     observations: store.listObservations(),
     hints: store.listHints(),
   });

@@ -61,6 +61,65 @@ export function weekly(rows, memberId, weekId, competencyId) {
   };
 }
 
+// --- یک جلسه، نه یک هفته -------------------------------------------------------
+//
+// جلسه‌ی بازبینی TPM یک رویداد است، نه یک کار هفتگی. ولی فرم هفته دارد، و آدم‌ها هفته را
+// اشتباه می‌زنند: یکی فقط هفته‌ی بعدی را پر کرد، یکی هر دو را.
+//
+// پس برای گزارشِ آن جلسه، هفته اصلاً نگاه نمی‌شود و از هر رأی‌دهنده **یک** ردیف برداشته
+// می‌شود. اگر این کار نشود، رأی کسی که دو بار ثبت کرده دو بار در میانه می‌نشیند و عدد را
+// کج می‌کند — و بدتر، این کجی هیچ‌جا پیدا نیست.
+//
+// تازه‌ترین ردیف برنده است، چون ردیف دوم معمولاً اصلاح ردیف اول است.
+export function latestPerRater(rows) {
+  const best = new Map();
+  for (const row of rows) {
+    const key = raterOf(row);
+    const seen = best.get(key);
+    const when = Date.parse(row.submittedAt ?? row.updatedAt ?? row.createdAt ?? 0) || 0;
+    if (!seen || when >= seen.when) best.set(key, { row, when });
+  }
+  return [...best.values()].map((x) => x.row);
+}
+
+// همان `weekly`، ولی برای کل جلسه و بدون توجه به هفته.
+export function overall(rows, memberId, metricId) {
+  const mine = latestPerRater(
+    submitted(rows).filter((r) => r.memberId === memberId && metricId in (r.ratings ?? {})),
+  );
+  const raters = mine.map((r) => ({
+    rater: raterOf(r),
+    author: r.author,
+    weekId: r.weekId,
+    rating: r.ratings[metricId],
+  }));
+  const values = raters.map((r) => r.rating);
+  return {
+    value: median(values),
+    raters,
+    observed: numeric(values).length,
+    notObserved: values.filter((v) => v === NOT_OBSERVED).length,
+  };
+}
+
+// چه کسی برای یک نفر بیش از یک بار ثبت کرده، و کدام ردیفش شمرده شد. برای اینکه جمع‌شدنِ
+// رأی تکراری در گزارش پنهان نماند.
+export function collapsed(rows, memberId) {
+  const mine = submitted(rows).filter((r) => r.memberId === memberId);
+  const byRater = new Map();
+  for (const row of mine) {
+    const key = raterOf(row);
+    byRater.set(key, [...(byRater.get(key) ?? []), row]);
+  }
+  const out = [];
+  for (const [rater, list] of byRater) {
+    if (list.length < 2) continue;
+    const kept = latestPerRater(list)[0];
+    out.push({ rater, kept: kept.weekId, dropped: list.filter((r) => r !== kept).map((r) => r.weekId) });
+  }
+  return out;
+}
+
 // §۳۳ — این فقط حجم شواهد را می‌گوید، نه اطمینان آماری.
 export function evidenceLevel(observedCount) {
   if (observedCount >= 3) return 'strong';
