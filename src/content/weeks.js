@@ -29,7 +29,7 @@ export const WEEK_CONTENT = {
     talk: { note: 'موضوع: StarRocks — مهمان: علیرضا مصلی‌نژاد' },
   },
   5: {
-    talk: { note: 'موضوع: Kubernetes' },
+    talk: { note: 'موضوع: Testing — مهمان: محمدعلی بزرگ‌زاده' },
   },
   6: {
     talk: { note: 'موضوع: Debugging مؤثر و ریشه‌یابی مشکل' },
